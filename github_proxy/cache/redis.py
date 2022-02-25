@@ -50,3 +50,7 @@ class RedisCache(CacheBackend, scheme="redis"):
                 etag=value[1],
             ),
         )
+
+        # Ideally we should do this in a single atomic transaction together with hset
+        # Maybe lock?
+        self._client.expire(self._cached_key(key), self.config.cache_ttl)
