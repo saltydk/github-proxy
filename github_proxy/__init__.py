@@ -56,6 +56,7 @@ def caching_proxy(path: str) -> werkzeug.Response:
         resp = proxy_request(request, config=config)
         etag = resp.headers.get("Etag") # TODO: Need to also handle the `Last-Modified` header
         if etag is not None:
+            # TODO: Writing to cache should happen asyncronously
             cache.set(path, (resp, etag))
 
         return resp
