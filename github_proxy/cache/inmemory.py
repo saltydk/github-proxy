@@ -1,4 +1,4 @@
-from typing import Mapping, Optional
+from typing import Optional
 
 from cachetools import TTLCache
 

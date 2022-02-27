@@ -1,5 +1,5 @@
 import json
-from typing import ItemsView, Optional, Tuple, TypedDict
+from typing import Optional, TypedDict
 
 import werkzeug
 from redis import Redis

@@ -1,19 +1,38 @@
-from injector import Binder, Injector, Module, provider, singleton
+from functools import lru_cache, wraps
+from typing import Any, Callable, TypeVar
 
-from github_proxy.cache import CacheBackend
+from github_proxy.cache.backend import CacheBackend
 from github_proxy.config import Config
 
 
-def configure_config(binder: Binder) -> None:
-    binder.bind(Config, to=Config(), scope=singleton)
+@lru_cache
+def get_config() -> Config:
+    return Config()
 
 
-class CacheBackendModule(Module):
-    @singleton
-    @provider
-    def provide_cache_backend(self, config: Config) -> CacheBackend:
-        backend_cls = CacheBackend.from_url(config.cache_backend_url)
-        return backend_cls(config)
+@lru_cache
+def get_cache(config: Config) -> CacheBackend:
+    cache_backend = CacheBackend.from_url(config.cache_backend_url)
+    return cache_backend(config)
 
 
-dep_injector = Injector([configure_config, CacheBackendModule])
+T = TypeVar("T")
+
+
+def inject_config(func: Callable[..., T]) -> Callable[..., T]:
+    @wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> T:
+        config = get_config()
+        return func(*args, config=config, **kwargs)
+
+    return wrapper
+
+
+def inject_cache(func: Callable[..., T]) -> Callable[..., T]:
+    @wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> T:
+        config = get_config()
+        cache = get_cache(config)
+        return func(*args, cache=cache, **kwargs)
+
+    return wrapper

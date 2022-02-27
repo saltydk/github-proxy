@@ -6,7 +6,7 @@ from flask import Blueprint, request
 
 from github_proxy.cache.backend import CacheBackend
 from github_proxy.config import Config
-from github_proxy.dependencies import dep_injector
+from github_proxy.dependencies import inject_cache, inject_config
 
 blueprint = Blueprint("github_proxy", __name__)
 
@@ -46,15 +46,16 @@ def proxy_request(
 
 
 @blueprint.route("/<path:path>", methods=["GET"])
-def caching_proxy(path: str) -> werkzeug.Response:
-    config = dep_injector.get(Config)
-    cache = dep_injector.get(CacheBackend)
-
+@inject_cache
+@inject_config
+def caching_proxy(path: str, config: Config, cache: CacheBackend) -> werkzeug.Response:
     cached_value = cache.get(path)
 
     if cached_value is None:
         resp = proxy_request(request, config=config)
-        etag = resp.headers.get("Etag") # TODO: Need to also handle the `Last-Modified` header
+        etag = resp.headers.get(
+            "Etag"
+        )  # TODO: Need to also handle the `Last-Modified` header
         if etag is not None:
             # TODO: Writing to cache should happen asyncronously
             cache.set(path, (resp, etag))
@@ -77,6 +78,6 @@ def caching_proxy(path: str) -> werkzeug.Response:
 
 
 @blueprint.route("/<path:path>", methods=["POST", "PATCH", "PUT", "DELETE"])
-def proxy(path: str) -> werkzeug.Response:
-    config = dep_injector.get(Config)
+@inject_config
+def proxy(path: str, config: Config) -> werkzeug.Response:
     return proxy_request(request, config)
