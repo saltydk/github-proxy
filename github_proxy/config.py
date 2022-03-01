@@ -1,5 +1,6 @@
 import os
-from typing import Mapping, Optional
+from typing import Mapping
+from typing import Optional
 
 
 class Config:

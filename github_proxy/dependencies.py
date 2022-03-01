@@ -1,5 +1,8 @@
-from functools import lru_cache, wraps
-from typing import Any, Callable, TypeVar
+from functools import lru_cache
+from functools import wraps
+from typing import Any
+from typing import Callable
+from typing import TypeVar
 
 from github_proxy.cache.backend import CacheBackend
 from github_proxy.config import Config

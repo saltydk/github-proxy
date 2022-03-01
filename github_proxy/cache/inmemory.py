@@ -2,7 +2,9 @@ from typing import Optional
 
 from cachetools import TTLCache
 
-from github_proxy.cache.backend import CacheBackend, CacheBackendConfig, Value
+from github_proxy.cache.backend import CacheBackend
+from github_proxy.cache.backend import CacheBackendConfig
+from github_proxy.cache.backend import Value
 
 
 class InMemoryCache(CacheBackend, scheme="inmemory"):

@@ -1,10 +1,13 @@
 import json
-from typing import Optional, TypedDict
+from typing import Optional
+from typing import TypedDict
 
 import werkzeug
 from redis import Redis
 
-from github_proxy.cache.backend import CacheBackend, CacheBackendConfig, Value
+from github_proxy.cache.backend import CacheBackend
+from github_proxy.cache.backend import CacheBackendConfig
+from github_proxy.cache.backend import Value
 
 
 class HashValue(TypedDict):
@@ -43,7 +46,7 @@ class RedisCache(CacheBackend, scheme="redis"):
 
         self._client.hset(
             name=self._cached_key(key),
-            mapping=HashValue(
+            mapping=HashValue(  # type: ignore
                 response_object=json.dumps(
                     [serialised_data, serialised_status, serialised_headers]
                 ),

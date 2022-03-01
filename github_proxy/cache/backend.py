@@ -1,5 +1,11 @@
-from abc import ABC, abstractmethod
-from typing import ClassVar, MutableMapping, Optional, Protocol, Tuple, Type
+from abc import ABC
+from abc import abstractmethod
+from typing import ClassVar
+from typing import MutableMapping
+from typing import Optional
+from typing import Protocol
+from typing import Tuple
+from typing import Type
 from urllib.parse import urlparse
 
 import werkzeug

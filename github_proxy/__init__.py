@@ -2,11 +2,13 @@ from typing import Optional
 
 import requests
 import werkzeug
-from flask import Blueprint, request
+from flask import Blueprint
+from flask import request
 
 from github_proxy.cache.backend import CacheBackend
 from github_proxy.config import Config
-from github_proxy.dependencies import inject_cache, inject_config
+from github_proxy.dependencies import inject_cache
+from github_proxy.dependencies import inject_config
 
 blueprint = Blueprint("github_proxy", __name__)
 
