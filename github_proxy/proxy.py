@@ -7,6 +7,7 @@ from github_proxy.config import Config
 
 
 def proxy_request(
+    path: str,
     request: werkzeug.Request,
     config: Config,
     etag: Optional[str] = None,
@@ -29,7 +30,7 @@ def proxy_request(
 
     resp = requests.request(
         method=request.method.lower(),
-        url=config.github_api_url.rstrip("/") + request.path,
+        url=f'{config.github_api_url.rstrip("/")}/{path}',
         data=request.data,
         headers=headers,
         params=request.args.to_dict(),

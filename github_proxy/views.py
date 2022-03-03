@@ -36,7 +36,7 @@ def caching_proxy(path: str, config: Config, cache: CacheBackend) -> werkzeug.Re
     cached_response = cache.get(path)
 
     if cached_response is None:  # cache miss
-        resp = proxy_request(request, config=config)
+        resp = proxy_request(path, request, config=config)
         etag_value, _ = resp.get_etag()
         if etag_value or resp.last_modified:
             # TODO: Writing to cache should happen asyncronously
@@ -46,6 +46,7 @@ def caching_proxy(path: str, config: Config, cache: CacheBackend) -> werkzeug.Re
 
     # conditional request
     resp = proxy_request(
+        path,
         request,
         config=config,
         etag=cached_response.headers.get("Etag"),
@@ -64,4 +65,4 @@ def caching_proxy(path: str, config: Config, cache: CacheBackend) -> werkzeug.Re
 @inject_config
 def proxy(path: str, config: Config) -> werkzeug.Response:
     logger.info("%s client requesting %s", auth.current_user(), request.path)
-    return proxy_request(request, config)
+    return proxy_request(path, request, config)
