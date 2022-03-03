@@ -4,7 +4,6 @@ from typing import ClassVar
 from typing import MutableMapping
 from typing import Optional
 from typing import Protocol
-from typing import Tuple
 from typing import Type
 from urllib.parse import urlparse
 
@@ -16,7 +15,7 @@ class CacheBackendConfig(Protocol):
     cache_ttl: int
 
 
-Value = Tuple[werkzeug.Response, str]
+Value = werkzeug.Response
 
 
 class CacheBackend(ABC):
