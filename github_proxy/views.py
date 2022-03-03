@@ -32,7 +32,13 @@ def verify_token(token: str, tokens: Mapping[str, str]) -> Optional[str]:
 @inject_config
 @auth.login_required  # type: ignore
 def caching_proxy(path: str, config: Config, cache: CacheBackend) -> werkzeug.Response:
-    logger.info("%s client requesting %s", auth.current_user(), request.path)
+    logger.info(
+        "%s client requesting %s, with Etag: %s, Last-Modified: %s",
+        auth.current_user(),
+        path,
+        request.headers.get("If-None-Match"),
+        request.headers.get("If-Modified-Since"),
+    )
     cached_response = cache.get(path)
 
     if cached_response is None:  # cache miss
@@ -64,5 +70,5 @@ def caching_proxy(path: str, config: Config, cache: CacheBackend) -> werkzeug.Re
 @auth.login_required  # type: ignore
 @inject_config
 def proxy(path: str, config: Config) -> werkzeug.Response:
-    logger.info("%s client requesting %s", auth.current_user(), request.path)
+    logger.info("%s client requesting %s", auth.current_user(), path)
     return proxy_request(path, request, config)
