@@ -39,3 +39,12 @@ def inject_cache(func: Callable[..., T]) -> Callable[..., T]:
         return func(*args, cache=cache, **kwargs)
 
     return wrapper
+
+
+def inject_tokens(func: Callable[..., T]) -> Callable[..., T]:
+    @wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> T:
+        config = get_config()
+        return func(*args, tokens=config.tokens, **kwargs)
+
+    return wrapper

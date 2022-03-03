@@ -14,3 +14,8 @@ class Config:
         self.github_pat = config_dict["GITHUB_PAT"]
         self.cache_ttl = int(config_dict.get("CACHE_TTL", "3600"))
         self.cache_backend_url = config_dict.get("CACHE_BACKEND_URL", "inmemory://")
+        self.tokens = {
+            token: env[len("TOKEN_") :].lower()
+            for env, token in config_dict.items()
+            if env.startswith("TOKEN_")
+        }
