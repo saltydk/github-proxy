@@ -50,3 +50,7 @@ class RedisCache(CacheBackend, scheme="redis"):
             value=json.dumps(serialized_value),
             time=self.config.cache_ttl,
         )
+
+
+class SecureRedisCache(RedisCache, scheme="rediss"):
+    pass
