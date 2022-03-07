@@ -34,7 +34,7 @@ class RedisCache(CacheBackend, scheme="redis"):
     def _cached_key(self, key_suffix: str) -> str:
         return f"cached:{key_suffix}"
 
-    def get(self, key: str) -> Optional[Value]:
+    def _get(self, key: str) -> Optional[Value]:
         json_serialized_value = self._client.get(self._cached_key(key))
         if not json_serialized_value:
             return None
@@ -42,7 +42,7 @@ class RedisCache(CacheBackend, scheme="redis"):
         serialized_value = json.loads(json_serialized_value)
         return deserialize_value(serialized_value)
 
-    def set(self, key: str, value: Value) -> None:
+    def _set(self, key: str, value: Value) -> None:
         serialized_value = serialize_value(value)
 
         self._client.setex(

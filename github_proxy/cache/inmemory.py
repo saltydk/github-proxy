@@ -8,14 +8,16 @@ from github_proxy.cache.backend import Value
 
 
 class InMemoryCache(CacheBackend, scheme="inmemory"):
+    """Useful for testing purposes"""
+
     def __init__(self, config: CacheBackendConfig):
         super().__init__(config)
         self._store: TTLCache[str, Value] = TTLCache(
             maxsize=1024, ttl=self.config.cache_ttl
         )
 
-    def get(self, key: str) -> Optional[Value]:
+    def _get(self, key: str) -> Optional[Value]:
         return self._store.get(key)
 
-    def set(self, key: str, value: Value) -> None:
+    def _set(self, key: str, value: Value) -> None:
         self._store[key] = value

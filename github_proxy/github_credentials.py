@@ -104,7 +104,7 @@ def credential_generator(
     """
     # GitHub apps take precedence
     for app_name, app_config in config.github_apps.items():
-        if (GitHubCredentialOrigin.GITHUB_APP, app_name) in rate_limited.keys():
+        if (GitHubCredentialOrigin.GITHUB_APP, app_name) in rate_limited:
             # rate-limited apps are skipped
             continue
 

@@ -1,3 +1,4 @@
+import logging
 from abc import ABC
 from abc import abstractmethod
 from typing import ClassVar
@@ -8,6 +9,8 @@ from typing import Type
 from urllib.parse import urlparse
 
 import werkzeug
+
+logger = logging.getLogger(__name__)
 
 
 class CacheBackendConfig(Protocol):
@@ -30,12 +33,25 @@ class CacheBackend(ABC):
         self.config = config
 
     @abstractmethod
-    def get(self, key: str) -> Optional[Value]:
+    def _get(self, key: str) -> Optional[Value]:
         ...
 
     @abstractmethod
-    def set(self, key: str, value: Value) -> None:
+    def _set(self, key: str, value: Value) -> None:
         ...
+
+    def get(self, key: str) -> Optional[Value]:
+        try:
+            return self._get(key)
+        except Exception as e:
+            logger.error("Failed retrieving %s with error: %s", key, e)
+            return None
+
+    def set(self, key: str, value: Value) -> None:
+        try:
+            self._set(key, value)
+        except Exception as e:
+            logger.error("Failed setting %s with error: %s", key, e)
 
     @classmethod
     def from_url(cls, url: str) -> Type["CacheBackend"]:
