@@ -11,7 +11,9 @@ from github_proxy.cache.backend import CacheBackend
 from github_proxy.config import Config
 from github_proxy.dependencies import inject_cache
 from github_proxy.dependencies import inject_config
+from github_proxy.dependencies import inject_rate_limited
 from github_proxy.dependencies import inject_tokens
+from github_proxy.github_credentials import RateLimited
 from github_proxy.proxy import proxy_request
 
 logger = logging.getLogger(__name__)
@@ -30,8 +32,11 @@ def verify_token(token: str, tokens: Mapping[str, str]) -> Optional[str]:
 @blueprint.route("/<path:path>", methods=["GET"])
 @inject_cache
 @inject_config
+@inject_rate_limited
 @auth.login_required  # type: ignore
-def caching_proxy(path: str, config: Config, cache: CacheBackend) -> werkzeug.Response:
+def caching_proxy(
+    path: str, config: Config, cache: CacheBackend, rate_limited: RateLimited
+) -> werkzeug.Response:
     logger.info(
         "%s client requesting %s, with Etag: %s, Last-Modified: %s",
         auth.current_user(),
@@ -42,7 +47,7 @@ def caching_proxy(path: str, config: Config, cache: CacheBackend) -> werkzeug.Re
     cached_response = cache.get(path)
 
     if cached_response is None:  # cache miss
-        resp = proxy_request(path, request, config=config)
+        resp = proxy_request(path, request, config=config, rate_limited=rate_limited)
         etag_value, _ = resp.get_etag()
         if etag_value or resp.last_modified:
             # TODO: Writing to cache should happen asyncronously
@@ -55,6 +60,7 @@ def caching_proxy(path: str, config: Config, cache: CacheBackend) -> werkzeug.Re
         path,
         request,
         config=config,
+        rate_limited=rate_limited,
         etag=cached_response.headers.get("Etag"),
         last_modified=cached_response.headers.get("Last-Modified"),
     )
@@ -67,8 +73,8 @@ def caching_proxy(path: str, config: Config, cache: CacheBackend) -> werkzeug.Re
 
 
 @blueprint.route("/<path:path>", methods=["POST", "PATCH", "PUT", "DELETE"])
-@auth.login_required  # type: ignore
 @inject_config
+@auth.login_required  # type: ignore
 def proxy(path: str, config: Config) -> werkzeug.Response:
     logger.info("%s client requesting %s", auth.current_user(), path)
     return proxy_request(path, request, config)
