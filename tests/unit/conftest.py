@@ -9,6 +9,8 @@ import pytest
 from faker import Faker
 from github.InstallationAuthorization import InstallationAuthorization
 
+from github_proxy.cache import InMemoryCache
+from github_proxy.cache.backend import CacheBackend
 from github_proxy.config import Config
 from github_proxy.config import GitHubAppConfig
 
@@ -76,6 +78,7 @@ def config_factory(
             github_api_url=faker.url(),
             github_creds_cache_ttl_padding=0,
             github_creds_cache_maxsize=512,
+            cache_ttl=3600,
         )
 
     return factory
@@ -102,3 +105,8 @@ def installation_authz_factory() -> Callable[..., InstallationAuthorization]:
         )
 
     return factory
+
+
+@pytest.fixture
+def cache_backend(config: Config) -> CacheBackend:
+    return InMemoryCache(config)
