@@ -27,10 +27,8 @@ class TelemetryCollector:
     ) -> None:
         metric = self._registry.gauge(
             metric_name="custon_github_ratelimit",
-            labels={
-                "credential_name": cred.name,
-                "credential_origin": cred.origin.value,
-            },
+            credential_name=cred.name,
+            credential_origin=cred.origin.value,
         )
         remaining = get_ratelimit_remaining(response)
         limit = get_ratelimit_limit(response)
@@ -54,11 +52,9 @@ class TelemetryCollector:
     ) -> None:
         metric = self._registry.counter(
             metric_name="custom_github_proxy_request",
-            labels={
-                "client": client,
-                "method": request.method,
-                "cache_hit": cache_hit,
-            },
+            client=client,
+            http_method=request.method,
+            cache_hit=cache_hit,
         )
 
         metric.inc()
