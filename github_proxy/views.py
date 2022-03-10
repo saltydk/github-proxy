@@ -12,9 +12,12 @@ from github_proxy.config import Config
 from github_proxy.dependencies import inject_cache
 from github_proxy.dependencies import inject_config
 from github_proxy.dependencies import inject_rate_limited
+from github_proxy.dependencies import inject_tel_collector
 from github_proxy.dependencies import inject_tokens
 from github_proxy.github_credentials import RateLimited
+from github_proxy.proxy import proxy_cached_request
 from github_proxy.proxy import proxy_request
+from github_proxy.telemetry import TelemetryCollector
 
 logger = logging.getLogger(__name__)
 
@@ -33,48 +36,31 @@ def verify_token(token: str, tokens: Mapping[str, str]) -> Optional[str]:
 @inject_cache
 @inject_config
 @inject_rate_limited
+@inject_tel_collector
 @auth.login_required  # type: ignore
 def caching_proxy(
-    path: str, config: Config, cache: CacheBackend, rate_limited: RateLimited
+    path: str,
+    config: Config,
+    cache: CacheBackend,
+    rate_limited: RateLimited,
+    tel_collector: TelemetryCollector,
 ) -> werkzeug.Response:
-    logger.info(
-        "%s client requesting %s, with Etag: %s, Last-Modified: %s",
-        auth.current_user(),
-        path,
-        request.headers.get("If-None-Match"),
-        request.headers.get("If-Modified-Since"),
+    return proxy_cached_request(
+        path, request, auth.current_user(), config, cache, rate_limited, tel_collector
     )
-    cached_response = cache.get(path)
-
-    if cached_response is None:  # cache miss
-        resp = proxy_request(path, request, config=config, rate_limited=rate_limited)
-        etag_value, _ = resp.get_etag()
-        if etag_value or resp.last_modified:
-            # TODO: Writing to cache should happen asyncronously
-            cache.set(path, resp)
-
-        return resp
-
-    # conditional request
-    resp = proxy_request(
-        path,
-        request,
-        config=config,
-        rate_limited=rate_limited,
-        etag=cached_response.headers.get("Etag"),
-        last_modified=cached_response.headers.get("Last-Modified"),
-    )
-    if resp.status_code != 304:
-        cache.set(path, resp)
-
-        return resp
-
-    return cached_response  # cache hit
 
 
 @blueprint.route("/<path:path>", methods=["POST", "PATCH", "PUT", "DELETE"])
 @inject_config
+@inject_rate_limited
+@inject_tel_collector
 @auth.login_required  # type: ignore
-def proxy(path: str, config: Config) -> werkzeug.Response:
-    logger.info("%s client requesting %s", auth.current_user(), path)
-    return proxy_request(path, request, config)
+def proxy(
+    path: str,
+    config: Config,
+    rate_limited: RateLimited,
+    tel_collector: TelemetryCollector,
+) -> werkzeug.Response:
+    return proxy_request(
+        path, request, auth.current_user(), config, rate_limited, tel_collector
+    )

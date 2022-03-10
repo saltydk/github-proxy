@@ -11,6 +11,7 @@ from cachetools import TLRUCache  # type: ignore
 from github_proxy.cache.backend import CacheBackend
 from github_proxy.config import Config
 from github_proxy.github_credentials import RateLimited
+from github_proxy.telemetry import TelemetryCollector
 
 
 @lru_cache
@@ -37,6 +38,11 @@ def get_rate_limited(config: Config) -> RateLimited:
         ttu=time_to_use,
         timer=datetime.now,
     )
+
+
+@lru_cache
+def get_tel_collector() -> TelemetryCollector:
+    return TelemetryCollector()
 
 
 T = TypeVar("T")
@@ -96,5 +102,13 @@ def inject_rate_limited(func: Callable[..., T]) -> Callable[..., T]:
         config = get_config()
         rate_limited = get_rate_limited(config)
         return func(*args, rate_limited=rate_limited, **kwargs)
+
+    return wrapper
+
+
+def inject_tel_collector(func: Callable[..., T]) -> Callable[..., T]:
+    @wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> T:
+        return func(*args, tel_collector=get_tel_collector(), **kwargs)
 
     return wrapper
