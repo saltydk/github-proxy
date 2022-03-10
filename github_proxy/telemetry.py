@@ -26,7 +26,7 @@ class TelemetryCollector:
         self, cred: GitHubCredential, response: requests.Response
     ) -> None:
         metric = self._registry.gauge(
-            metric_name="github_rate_limit",
+            metric_name="custon_github_ratelimit",
             labels={
                 "credential_name": cred.name,
                 "credential_origin": cred.origin.value,
@@ -53,7 +53,7 @@ class TelemetryCollector:
         cache_hit: Optional[bool] = None,
     ) -> None:
         metric = self._registry.counter(
-            metric_name="github_proxy_request",
+            metric_name="custom_github_proxy_request",
             labels={
                 "client": client,
                 "method": request.method,
