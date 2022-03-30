@@ -174,3 +174,7 @@ class Proxy:
                 )
 
         raise RuntimeError("All available GitHub credentials are rate limited")
+
+    def health(self) -> bool:
+        resp = self.cached_request("zen", werkzeug.Request.from_values(), "healthcheck")
+        return resp.status_code == 200
