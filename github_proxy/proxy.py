@@ -62,22 +62,28 @@ class Proxy:
     def cached_request(
         self, path: str, request: werkzeug.Request, client: str
     ) -> werkzeug.Response:
+        media_type = request.accept_mimetypes.best
         logger.info(
-            "%s client requesting %s, with Etag: %s, Last-Modified: %s",
+            "%s client requesting %s %s, with Etag: %s, Last-Modified: %s",
             client,
             path,
+            media_type,
             request.headers.get("If-None-Match"),
             request.headers.get("If-Modified-Since"),
         )
 
-        cached_response = self.cache.get(path)
+        # The requested media type MUST be combined with the path
+        # when indexing cached resources. The GitHub API may return a
+        # completely different response based on the requested MIME type.
+        # See more: https://docs.github.com/en/rest/overview/media-types
+        cached_response = self.cache.get(path, media_type)
 
         if cached_response is None:  # cache miss
             resp = self._send_gh_request(path, request)
             etag_value, _ = resp.get_etag()
             if etag_value or resp.last_modified:
                 # TODO: Writing to cache should happen asyncronously
-                self.cache.set(path, resp)
+                self.cache.set(path, media_type, resp)
 
             self.tel_collector.collect_proxy_request_metrics(
                 client, request, cache_hit=False
@@ -92,7 +98,7 @@ class Proxy:
             last_modified=cached_response.headers.get("Last-Modified"),
         )
         if resp.status_code != 304:
-            self.cache.set(path, resp)
+            self.cache.set(path, media_type, resp)
             self.tel_collector.collect_proxy_request_metrics(
                 client, request, cache_hit=False
             )

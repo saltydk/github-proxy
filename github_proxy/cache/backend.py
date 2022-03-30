@@ -32,25 +32,29 @@ class CacheBackend(ABC):
         self.config = config
 
     @abstractmethod
-    def _get(self, key: str) -> Optional[Value]:
+    def _get(self, resource: str, representation: str) -> Optional[Value]:
         ...
 
     @abstractmethod
-    def _set(self, key: str, value: Value) -> None:
+    def _set(self, resource: str, representation: str, value: Value) -> None:
         ...
 
-    def get(self, key: str) -> Optional[Value]:
+    def get(self, resource: str, representation: str) -> Optional[Value]:
         try:
-            return self._get(key)
+            return self._get(resource, representation)
         except Exception as e:
-            logger.error("Failed retrieving %s with error: %s", key, e)
+            logger.error(
+                "Failed retrieving %s %s with error: %s", resource, representation, e
+            )
             return None
 
-    def set(self, key: str, value: Value) -> None:
+    def set(self, resource: str, representation: str, value: Value) -> None:
         try:
-            self._set(key, value)
+            self._set(resource, representation, value)
         except Exception as e:
-            logger.error("Failed setting %s with error: %s", key, e)
+            logger.error(
+                "Failed setting %s with error: %s", resource, representation, e
+            )
 
     @classmethod
     def factory(cls, config: CacheBackendConfig) -> "CacheBackend":
