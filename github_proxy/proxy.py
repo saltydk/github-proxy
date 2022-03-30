@@ -81,13 +81,15 @@ class Proxy:
         if cached_response is None:  # cache miss
             resp = self._send_gh_request(path, request)
             etag_value, _ = resp.get_etag()
+            cache_hit = None
+
             if etag_value or resp.last_modified:
                 # TODO: Writing to cache should happen asyncronously
                 self.cache.set(path, media_type, resp)
+                # cache miss can only happen if resource is cacheable:
+                cache_hit = False
 
-            self.tel_collector.collect_proxy_request_metrics(
-                client, request, cache_hit=False
-            )
+            self.tel_collector.collect_proxy_request_metrics(client, request, cache_hit)
             return resp
 
         # conditional request
