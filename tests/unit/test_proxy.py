@@ -30,14 +30,15 @@ def test_proxy_cached_request_cache_hit(
 
     path = faker.uri_path()
     cached_response = werkzeug.Response()
-    proxy.cache.set(path, cached_response)
+    media_type = faker.mime_type()
+    proxy.cache.set(path, media_type, cached_response)
 
     requests_mock.get(
         proxy.github_api_url + path,
         status_code=304,
     )
 
-    builder = EnvironBuilder()
+    builder = EnvironBuilder(headers=[("Accept", media_type)])
     request = Request(builder.get_environ())
     client = faker.word()
     proxy.tel_collector = mock.Mock()
@@ -65,8 +66,9 @@ def test_proxy_cached_request_cache_miss_if_stale_cache_entry(
     get_access_token_mock.return_value = installation_authz_factory(faker.pystr())
 
     path = faker.uri_path()
+    media_type = faker.mime_type()
     cached_response = werkzeug.Response()
-    proxy.cache.set(path, cached_response)
+    proxy.cache.set(path, media_type, cached_response)
 
     requests_mock.get(
         proxy.github_api_url + path,
@@ -74,7 +76,7 @@ def test_proxy_cached_request_cache_miss_if_stale_cache_entry(
         headers={"Etag": faker.pystr()},
     )
 
-    builder = EnvironBuilder()
+    builder = EnvironBuilder(headers=[("Accept", media_type)])
     request = Request(builder.get_environ())
     client = faker.word()
     proxy.tel_collector = mock.Mock()
@@ -86,8 +88,8 @@ def test_proxy_cached_request_cache_miss_if_stale_cache_entry(
     )
 
     assert resp != cached_response
-    assert proxy.cache.get(path) != cached_response
-    assert resp == proxy.cache.get(path)
+    assert proxy.cache.get(path, media_type) != cached_response
+    assert resp == proxy.cache.get(path, media_type)
     proxy.tel_collector.collect_proxy_request_metrics.assert_called_once_with(
         client, request, cache_hit=False
     )
@@ -104,12 +106,13 @@ def test_proxy_cached_request_cache_miss_if_no_cache_entry(
     get_access_token_mock.return_value = installation_authz_factory(faker.pystr())
 
     path = faker.uri_path()
+    media_type = faker.mime_type()
 
     requests_mock.get(
         proxy.github_api_url + path, status_code=200, headers={"Etag": faker.pystr()}
     )
 
-    builder = EnvironBuilder()
+    builder = EnvironBuilder(headers=[("Accept", media_type)])
     request = Request(builder.get_environ())
     client = faker.word()
     proxy.tel_collector = mock.Mock()
@@ -120,7 +123,7 @@ def test_proxy_cached_request_cache_miss_if_no_cache_entry(
         client=client,
     )
 
-    assert resp == proxy.cache.get(path)
+    assert resp == proxy.cache.get(path, media_type)
     proxy.tel_collector.collect_proxy_request_metrics.assert_called_once_with(
         client, request, cache_hit=False
     )
@@ -137,13 +140,14 @@ def test_proxy_cached_request_does_not_cache_responses_without_cache_headers(
     get_access_token_mock.return_value = installation_authz_factory(faker.pystr())
 
     path = faker.uri_path()
+    media_type = faker.mime_type()
 
     requests_mock.get(
         proxy.github_api_url + path,
         status_code=200,
     )
 
-    builder = EnvironBuilder()
+    builder = EnvironBuilder(headers=[("Accept", media_type)])
     request = Request(builder.get_environ())
     client = faker.word()
     proxy.tel_collector = mock.Mock()
@@ -155,7 +159,7 @@ def test_proxy_cached_request_does_not_cache_responses_without_cache_headers(
     )
 
     assert isinstance(resp, werkzeug.Response)
-    assert not proxy.cache.get(path)
+    assert not proxy.cache.get(path, media_type)
     proxy.tel_collector.collect_proxy_request_metrics.assert_called_once_with(
         client, request, cache_hit=False
     )
