@@ -1,0 +1,281 @@
+interactions:
+- request:
+    body: '{}'
+    headers:
+      Accept:
+      - application/vnd.github.machine-man-preview+json
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '2'
+      Content-Type:
+      - application/json
+      User-Agent:
+      - PyGithub/Python
+      authorization:
+      - token REDACTED
+    method: POST
+    uri: https://api.github.com/app/installations/23919646/access_tokens
+  response:
+    body:
+      string: '{"token": "REDACTED", "expires_at": "2022-03-29T22:12:30Z", "permissions":
+        {"actions": "read", "checks": "write", "contents": "write", "issues": "write",
+        "metadata": "read", "pull_requests": "write", "statuses": "write", "workflows":
+        "write"}, "repository_selection": "selected"}'
+    headers:
+      Access-Control-Allow-Origin:
+      - '*'
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes,
+        X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO,
+        X-GitHub-Request-Id, Deprecation, Sunset
+      Cache-Control:
+      - public, max-age=60, s-maxage=60
+      Content-Length:
+      - '289'
+      Content-Security-Policy:
+      - default-src 'none'
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Tue, 29 Mar 2022 21:12:30 GMT
+      ETag:
+      - '"71eda34d4151c529383b3610f520527793f694431ab5b3ddef366882ef3a0ed3"'
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Server:
+      - GitHub.com
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      Vary:
+      - Accept
+      - Accept-Encoding, Accept, X-Requested-With
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - deny
+      X-GitHub-Media-Type:
+      - github.v3; param=machine-man-preview; format=json
+      X-GitHub-Request-Id:
+      - 3E84:0AF1:204DFB4:22802F1:6243763E
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 201
+      message: Created
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - werkzeug/2.0.3
+      authorization:
+      - token REDACTED
+    method: GET
+    uri: https://api.github.com/users/dedoussis
+  response:
+    body:
+      string: "{\"login\":\"dedoussis\",\"id\":24495755,\"node_id\":\"MDQ6VXNlcjI0NDk1NzU1\",\"avatar_url\":\"https://avatars.githubusercontent.com/u/24495755?v=4\",\"gravatar_id\":\"\",\"url\":\"https://api.github.com/users/dedoussis\",\"html_url\":\"https://github.com/dedoussis\",\"followers_url\":\"https://api.github.com/users/dedoussis/followers\",\"following_url\":\"https://api.github.com/users/dedoussis/following{/other_user}\",\"gists_url\":\"https://api.github.com/users/dedoussis/gists{/gist_id}\",\"starred_url\":\"https://api.github.com/users/dedoussis/starred{/owner}{/repo}\",\"subscriptions_url\":\"https://api.github.com/users/dedoussis/subscriptions\",\"organizations_url\":\"https://api.github.com/users/dedoussis/orgs\",\"repos_url\":\"https://api.github.com/users/dedoussis/repos\",\"events_url\":\"https://api.github.com/users/dedoussis/events{/privacy}\",\"received_events_url\":\"https://api.github.com/users/dedoussis/received_events\",\"type\":\"User\",\"site_admin\":false,\"name\":\"Dimitrios
+        Dedoussis\",\"company\":\"Babylon @babylonhealth\",\"blog\":\"https://dedouss.is\",\"location\":\"London,
+        United Kingdom\",\"email\":\"dimitrios@dedouss.is\",\"hireable\":null,\"bio\":\"
+        \U0001F412 \",\"twitter_username\":\"dedoussis\",\"public_repos\":21,\"public_gists\":3,\"followers\":21,\"following\":14,\"created_at\":\"2016-12-10T16:40:07Z\",\"updated_at\":\"2022-02-25T19:48:50Z\"}"
+    headers:
+      Access-Control-Allow-Origin:
+      - '*'
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes,
+        X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO,
+        X-GitHub-Request-Id, Deprecation, Sunset
+      Cache-Control:
+      - private, max-age=60, s-maxage=60
+      Content-Security-Policy:
+      - default-src 'none'
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Tue, 29 Mar 2022 21:12:31 GMT
+      ETag:
+      - W/"d09f40173c69882f4489d56b81d29aa2f48d03726169289ad189de74e6bbb5c6"
+      Last-Modified:
+      - Fri, 25 Feb 2022 19:48:50 GMT
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Server:
+      - GitHub.com
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept, Authorization, Cookie, X-GitHub-OTP
+      - Accept-Encoding, Accept, X-Requested-With
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - deny
+      X-GitHub-Media-Type:
+      - github.v3; format=json
+      X-GitHub-Request-Id:
+      - 57C4:EEAE:CCC7FC:D0654D:6243763F
+      X-RateLimit-Limit:
+      - '15000'
+      X-RateLimit-Remaining:
+      - '14984'
+      X-RateLimit-Reset:
+      - '1648591582'
+      X-RateLimit-Resource:
+      - core
+      X-RateLimit-Used:
+      - '16'
+      X-XSS-Protection:
+      - '0'
+      content-length:
+      - '1277'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{}'
+    headers:
+      Accept:
+      - application/vnd.github.machine-man-preview+json
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '2'
+      Content-Type:
+      - application/json
+      User-Agent:
+      - PyGithub/Python
+      authorization:
+      - token REDACTED
+    method: POST
+    uri: https://api.github.com/app/installations/23919646/access_tokens
+  response:
+    body:
+      string: '{"token": "REDACTED", "expires_at": "2022-03-29T22:12:31Z", "permissions":
+        {"actions": "read", "checks": "write", "contents": "write", "issues": "write",
+        "metadata": "read", "pull_requests": "write", "statuses": "write", "workflows":
+        "write"}, "repository_selection": "selected"}'
+    headers:
+      Access-Control-Allow-Origin:
+      - '*'
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes,
+        X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO,
+        X-GitHub-Request-Id, Deprecation, Sunset
+      Cache-Control:
+      - public, max-age=60, s-maxage=60
+      Content-Length:
+      - '289'
+      Content-Security-Policy:
+      - default-src 'none'
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Tue, 29 Mar 2022 21:12:31 GMT
+      ETag:
+      - '"8e6e6411009245a21d4baa764a5c5db3438a097253442200c06e6c583e6a1c99"'
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Server:
+      - GitHub.com
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      Vary:
+      - Accept
+      - Accept-Encoding, Accept, X-Requested-With
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - deny
+      X-GitHub-Media-Type:
+      - github.v3; param=machine-man-preview; format=json
+      X-GitHub-Request-Id:
+      - 816C:A8CF:1DB512C:1E33415:6243763F
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 201
+      message: Created
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      If-Modified-Since:
+      - Fri, 25 Feb 2022 19:48:50 GMT
+      User-Agent:
+      - werkzeug/2.0.3
+      authorization:
+      - token REDACTED
+    method: GET
+    uri: https://api.github.com/users/dedoussis
+  response:
+    body:
+      string: ''
+    headers:
+      Access-Control-Allow-Origin:
+      - '*'
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes,
+        X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO,
+        X-GitHub-Request-Id, Deprecation, Sunset
+      Cache-Control:
+      - private, max-age=60, s-maxage=60
+      Content-Security-Policy:
+      - default-src 'none'
+      Date:
+      - Tue, 29 Mar 2022 21:12:32 GMT
+      ETag:
+      - '"493f1075dac37c8cf3bf450ab796d86f811a4a9159d4fd58bd2e3d8a04de48f7"'
+      Last-Modified:
+      - Fri, 25 Feb 2022 19:48:50 GMT
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Server:
+      - GitHub.com
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      Vary:
+      - Accept, Authorization, Cookie, X-GitHub-OTP
+      - Accept-Encoding, Accept, X-Requested-With
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - deny
+      X-GitHub-Request-Id:
+      - 32FC:CC08:1808908:19C684A:62437640
+      X-RateLimit-Limit:
+      - '15000'
+      X-RateLimit-Remaining:
+      - '14984'
+      X-RateLimit-Reset:
+      - '1648591582'
+      X-RateLimit-Resource:
+      - core
+      X-RateLimit-Used:
+      - '16'
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 304
+      message: Not Modified
+version: 1

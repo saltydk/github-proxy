@@ -42,14 +42,14 @@ def test_credentials_generator_cache_miss(
 ):
     mock_token = faker.pystr()
     create_token_mock.return_value = installation_authz_factory(mock_token)
-    creds = credential_generator(config, {})
+    creds = credential_generator(config.github_api_url, config, {})
 
     app_cred = next(creds)  # app should preced PAT
     assert app_cred.origin == GitHubCredentialOrigin.GITHUB_APP
     assert app_cred.token == mock_token
 
     pat_cred = next(creds)  # pat comes last
-    assert pat_cred.origin == GitHubCredentialOrigin.USER_PAT
+    assert pat_cred.origin == GitHubCredentialOrigin.USER
     assert isinstance(pat_cred.token, str)
 
     # generator should now be empty
@@ -68,20 +68,20 @@ def test_credentials_generator_cache_hit(
 ):
     mock_token = faker.pystr()
     github_app, *_ = config.github_apps.keys()
-    ghi = CachedGithubIntegration.factory(github_app, config)
+    ghi = CachedGithubIntegration.factory(github_app, config, config.github_api_url)
 
     ghi._cache[  # type: ignore
         _methodkey(ghi, installation_id=config.github_apps[github_app].installation_id)
     ] = installation_authz_factory(mock_token)
 
-    creds = credential_generator(config, {})
+    creds = credential_generator(config.github_api_url, config, {})
 
     app_cred = next(creds)  # app should preced PAT
     assert app_cred.origin == GitHubCredentialOrigin.GITHUB_APP
     assert app_cred.token == mock_token
 
     pat_cred = next(creds)  # pat comes last
-    assert pat_cred.origin == GitHubCredentialOrigin.USER_PAT
+    assert pat_cred.origin == GitHubCredentialOrigin.USER
     assert isinstance(pat_cred.token, str)
 
     # generator should now be empty
@@ -99,18 +99,20 @@ def test_credentials_generator_skips_rate_limited_apps(
 ):
     mock_token = faker.pystr()
     github_app, *_ = config.github_apps.keys()
-    ghi = CachedGithubIntegration.factory(github_app, config)
+    ghi = CachedGithubIntegration.factory(github_app, config, config.github_api_url)
     ghi._cache[  # type: ignore
         _methodkey(ghi, installation_id=config.github_apps[github_app].installation_id)
     ] = installation_authz_factory(mock_token)
 
     creds = credential_generator(
-        config, {(GitHubCredentialOrigin.GITHUB_APP, github_app): mock.ANY}
+        config.github_api_url,
+        config,
+        {(GitHubCredentialOrigin.GITHUB_APP, github_app): mock.ANY},
     )
 
     cred = next(creds)
     # next cred is PAT, app is skipped
-    assert cred.origin == GitHubCredentialOrigin.USER_PAT
+    assert cred.origin == GitHubCredentialOrigin.USER
     assert isinstance(cred.token, str)
 
     # generator should now be empty
@@ -126,13 +128,15 @@ def test_credentials_generator_skips_rate_limited_pats(
     mock_token = faker.pystr()
     github_pat, *_ = config.github_pats.keys()
     github_app, *_ = config.github_apps.keys()
-    ghi = CachedGithubIntegration.factory(github_app, config)
+    ghi = CachedGithubIntegration.factory(github_app, config, config.github_api_url)
     ghi._cache[  # type: ignore
         _methodkey(ghi, installation_id=config.github_apps[github_app].installation_id)
     ] = installation_authz_factory(mock_token)
 
     creds = credential_generator(
-        config, {(GitHubCredentialOrigin.USER_PAT, github_pat): mock.ANY}
+        config.github_api_url,
+        config,
+        {(GitHubCredentialOrigin.USER, github_pat): mock.ANY},
     )
 
     cred = next(creds)

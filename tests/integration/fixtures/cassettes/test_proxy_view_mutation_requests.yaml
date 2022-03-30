@@ -1,0 +1,140 @@
+interactions:
+- request:
+    body: '{}'
+    headers:
+      Accept:
+      - application/vnd.github.machine-man-preview+json
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '2'
+      Content-Type:
+      - application/json
+      User-Agent:
+      - PyGithub/Python
+      authorization:
+      - token REDACTED
+    method: POST
+    uri: https://api.github.com/app/installations/23919646/access_tokens
+  response:
+    body:
+      string: '{"token": "REDACTED", "expires_at": "2022-03-29T22:12:34Z", "permissions":
+        {"actions": "read", "checks": "write", "contents": "write", "issues": "write",
+        "metadata": "read", "pull_requests": "write", "statuses": "write", "workflows":
+        "write"}, "repository_selection": "selected"}'
+    headers:
+      Access-Control-Allow-Origin:
+      - '*'
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes,
+        X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO,
+        X-GitHub-Request-Id, Deprecation, Sunset
+      Cache-Control:
+      - public, max-age=60, s-maxage=60
+      Content-Length:
+      - '289'
+      Content-Security-Policy:
+      - default-src 'none'
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Tue, 29 Mar 2022 21:12:34 GMT
+      ETag:
+      - '"346ad92760d42b108106807939b7139415b170b649f067f24793c1648c5c9b66"'
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Server:
+      - GitHub.com
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      Vary:
+      - Accept
+      - Accept-Encoding, Accept, X-Requested-With
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - deny
+      X-GitHub-Media-Type:
+      - github.v3; param=machine-man-preview; format=json
+      X-GitHub-Request-Id:
+      - B5A5:CA57:990EFD4:9C3A2ED:62437641
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 201
+      message: Created
+- request:
+    body: '{"text": "text"}'
+    headers:
+      Accept:
+      - application/vnd.github.v3+json
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '16'
+      Content-Type:
+      - application/json
+      User-Agent:
+      - werkzeug/2.0.3
+      authorization:
+      - token REDACTED
+    method: POST
+    uri: https://api.github.com/markdown
+  response:
+    body:
+      string: '<p>text</p>
+
+        '
+    headers:
+      Access-Control-Allow-Origin:
+      - '*'
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes,
+        X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO,
+        X-GitHub-Request-Id, Deprecation, Sunset
+      Content-Length:
+      - '12'
+      Content-Security-Policy:
+      - default-src 'none'
+      Content-Type:
+      - text/html;charset=utf-8
+      Date:
+      - Tue, 29 Mar 2022 21:12:35 GMT
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Server:
+      - GitHub.com
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      Vary:
+      - Accept-Encoding, Accept, X-Requested-With
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - deny
+      X-GitHub-Request-Id:
+      - 0B8B:3B4F:1F1B8E3:2119E50:62437643
+      X-RateLimit-Limit:
+      - '15000'
+      X-RateLimit-Remaining:
+      - '14983'
+      X-RateLimit-Reset:
+      - '1648591582'
+      X-RateLimit-Resource:
+      - core
+      X-RateLimit-Used:
+      - '17'
+      X-XSS-Protection:
+      - '0'
+      x-commonmarker-version:
+      - 0.23.4
+    status:
+      code: 200
+      message: OK
+version: 1

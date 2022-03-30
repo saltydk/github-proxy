@@ -13,6 +13,7 @@ from github_proxy.cache import InMemoryCache
 from github_proxy.cache.backend import CacheBackend
 from github_proxy.config import Config
 from github_proxy.config import GitHubAppConfig
+from github_proxy.proxy import Proxy
 
 _true_socket = socket.socket
 
@@ -110,3 +111,14 @@ def installation_authz_factory() -> Callable[..., InstallationAuthorization]:
 @pytest.fixture
 def cache_backend(config: Config) -> CacheBackend:
     return InMemoryCache(config)
+
+
+@pytest.fixture
+def proxy(config: Config, cache_backend: CacheBackend) -> Proxy:
+    return Proxy(
+        github_api_url=config.github_api_url,
+        github_credentials_config=config,
+        cache=cache_backend,
+        rate_limited={},
+        tel_collector=Mock(),
+    )
