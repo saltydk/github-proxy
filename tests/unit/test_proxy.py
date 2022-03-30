@@ -280,3 +280,29 @@ def test_send_gh_request_collects_telemetry_metrics(
         ),
         mock.ANY,
     )
+
+
+@pytest.mark.parametrize(
+    argnames=["status_code", "expected_result"],
+    argvalues=[(200, True), (401, False)],
+    ids=["health_success", "health_faulure"],
+)
+@mock.patch.object(GithubIntegration, "get_access_token")
+def test_health(
+    get_access_token_mock: mock.Mock,
+    status_code: int,
+    expected_result: bool,
+    requests_mock: requests_mock.Mocker,
+    proxy: Proxy,
+    faker: Faker,
+    installation_authz_factory: Callable[..., InstallationAuthorization],
+):
+    app_token = faker.pystr()
+    get_access_token_mock.return_value = installation_authz_factory(app_token)
+
+    requests_mock.get(
+        proxy.github_api_url + "zen",
+        status_code=status_code,
+    )
+
+    assert proxy.health() is expected_result
