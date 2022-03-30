@@ -96,7 +96,7 @@ def test_proxy_cached_request_cache_miss_if_stale_cache_entry(
 
 
 @mock.patch.object(GithubIntegration, "get_access_token")
-def test_proxy_cached_request_cache_miss_if_no_cache_entry(
+def test_proxy_cached_request_cache_miss_if_no_entry_for_cacheable_resource(
     get_access_token_mock: mock.Mock,
     faker: Faker,
     proxy: Proxy,
@@ -117,6 +117,8 @@ def test_proxy_cached_request_cache_miss_if_no_cache_entry(
     client = faker.word()
     proxy.tel_collector = mock.Mock()
 
+    assert not proxy.cache.get(path, media_type)
+
     resp = proxy.cached_request(
         path=path,
         request=request,
@@ -125,7 +127,7 @@ def test_proxy_cached_request_cache_miss_if_no_cache_entry(
 
     assert resp == proxy.cache.get(path, media_type)
     proxy.tel_collector.collect_proxy_request_metrics.assert_called_once_with(
-        client, request, cache_hit=False
+        client, request, False
     )
 
 
@@ -161,7 +163,9 @@ def test_proxy_cached_request_does_not_cache_responses_without_cache_headers(
     assert isinstance(resp, werkzeug.Response)
     assert not proxy.cache.get(path, media_type)
     proxy.tel_collector.collect_proxy_request_metrics.assert_called_once_with(
-        client, request, cache_hit=False
+        client,
+        request,
+        None,
     )
 
 
