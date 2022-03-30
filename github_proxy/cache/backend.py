@@ -12,13 +12,12 @@ import werkzeug
 
 logger = logging.getLogger(__name__)
 
+Value = werkzeug.Response
+
 
 class CacheBackendConfig(Protocol):
     cache_backend_url: str
     cache_ttl: int
-
-
-Value = werkzeug.Response
 
 
 class CacheBackend(ABC):
@@ -54,10 +53,10 @@ class CacheBackend(ABC):
             logger.error("Failed setting %s with error: %s", key, e)
 
     @classmethod
-    def from_url(cls, url: str) -> Type["CacheBackend"]:
-        url_parse_result = urlparse(url)
+    def factory(cls, config: CacheBackendConfig) -> "CacheBackend":
+        url_parse_result = urlparse(config.cache_backend_url)
 
         if url_parse_result.scheme not in cls._registry:
             raise RuntimeError(f"Cache backend {url_parse_result.scheme} not found")
 
-        return cls._registry[url_parse_result.scheme]
+        return cls._registry[url_parse_result.scheme](config)

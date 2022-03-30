@@ -3,10 +3,13 @@ from datetime import datetime
 from datetime import timedelta
 from enum import Enum
 from functools import lru_cache
+from typing import Hashable
 from typing import Iterator
+from typing import Mapping
 from typing import MutableMapping
 from typing import NamedTuple
 from typing import Optional
+from typing import Protocol
 from typing import Tuple
 from typing import Union
 
@@ -15,11 +18,22 @@ from cachetools import cachedmethod
 from github import GithubIntegration
 from github.InstallationAuthorization import InstallationAuthorization
 
-from github_proxy.config import Config
+
+class GitHubAppConfig(NamedTuple):
+    private_key: str
+    id_: str
+    installation_id: int
+
+
+class GitHubCredentialsConfig(Hashable, Protocol):
+    github_apps: Mapping[str, GitHubAppConfig]
+    github_pats: Mapping[str, str]
+    github_creds_cache_maxsize: int
+    github_creds_cache_ttl_padding: int
 
 
 class GitHubCredentialOrigin(Enum):
-    USER_PAT = "user PAT"
+    USER = "User"
     GITHUB_APP = "GitHub App"
 
 
@@ -73,7 +87,7 @@ class CachedGithubIntegration(GithubIntegration):
         self._cache = TLRUCache(
             maxsize=cache_maxsize,
             ttu=ttu,
-            timer=datetime.now,
+            timer=datetime.utcnow,
         )
 
     @cachedmethod(operator.attrgetter("_cache"))
@@ -84,19 +98,21 @@ class CachedGithubIntegration(GithubIntegration):
 
     @staticmethod
     @lru_cache
-    def factory(app_name: str, config: Config) -> GithubIntegration:
+    def factory(
+        app_name: str, config: GitHubCredentialsConfig, base_url: str
+    ) -> GithubIntegration:
         app_config = config.github_apps[app_name]
         return CachedGithubIntegration(
             integration_id=app_config.id_,
             private_key=app_config.private_key,
-            base_url=config.github_api_url,
+            base_url=base_url,
             cache_maxsize=config.github_creds_cache_maxsize,
             cache_ttl_padding=config.github_creds_cache_ttl_padding,
         )
 
 
 def credential_generator(
-    config: Config, rate_limited: RateLimited
+    base_url: str, config: GitHubCredentialsConfig, rate_limited: RateLimited
 ) -> Iterator[GitHubCredential]:
     """
     Lazy generator of GitHub credentials. Generates both GitHub App
@@ -108,7 +124,7 @@ def credential_generator(
             # rate-limited apps are skipped
             continue
 
-        ghi = CachedGithubIntegration.factory(app_name, config)
+        ghi = CachedGithubIntegration.factory(app_name, config, base_url)
         installation_authz = ghi.get_access_token(
             installation_id=app_config.installation_id
         )
@@ -121,12 +137,12 @@ def credential_generator(
 
     # Since there are no more apps, we can now yield GitHub user PATs
     for pat_name, pat in config.github_pats.items():
-        if (GitHubCredentialOrigin.USER_PAT, pat_name) in rate_limited:
+        if (GitHubCredentialOrigin.USER, pat_name) in rate_limited:
             # rate-limited pats are skipped
             continue
 
         yield GitHubCredential(
             name=pat_name,
-            origin=GitHubCredentialOrigin.USER_PAT,
+            origin=GitHubCredentialOrigin.USER,
             token=pat,
         )

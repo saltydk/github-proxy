@@ -1,16 +1,13 @@
 import os
 from typing import Mapping
-from typing import NamedTuple
 from typing import Optional
 
-
-class GitHubAppConfig(NamedTuple):
-    private_key: str
-    id_: str
-    installation_id: int
+from github_proxy.cache.backend import CacheBackendConfig
+from github_proxy.github_credentials import GitHubAppConfig
+from github_proxy.github_credentials import GitHubCredentialsConfig
 
 
-class Config:
+class Config(GitHubCredentialsConfig, CacheBackendConfig):
     def __init__(self, config_dict: Optional[Mapping[str, str]] = None):
         if config_dict is None:
             config_dict = os.environ
@@ -75,3 +72,6 @@ class Config:
             )
             for name in app_names
         }
+
+    def __hash__(self) -> int:  # to satisfy mypy
+        return super().__hash__()
