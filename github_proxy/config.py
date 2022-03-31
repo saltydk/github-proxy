@@ -3,11 +3,11 @@ from typing import Mapping
 from typing import Optional
 
 from github_proxy.cache.backend import CacheBackendConfig
-from github_proxy.github_credentials import GitHubAppConfig
-from github_proxy.github_credentials import GitHubCredentialsConfig
+from github_proxy.github_tokens import GitHubAppConfig
+from github_proxy.github_tokens import GitHubTokenConfig
 
 
-class Config(GitHubCredentialsConfig, CacheBackendConfig):
+class Config(GitHubTokenConfig, CacheBackendConfig):
     def __init__(self, config_dict: Optional[Mapping[str, str]] = None):
         if config_dict is None:
             config_dict = os.environ

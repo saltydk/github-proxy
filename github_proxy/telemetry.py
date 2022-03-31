@@ -6,7 +6,7 @@ import requests
 import werkzeug
 from prom_night import Registry  # type: ignore
 
-from github_proxy.github_credentials import GitHubCredential
+from github_proxy.github_tokens import GitHubToken
 from github_proxy.ratelimit import get_ratelimit_limit
 from github_proxy.ratelimit import get_ratelimit_remaining
 from github_proxy.ratelimit import get_ratelimit_reset
@@ -23,12 +23,12 @@ class TelemetryCollector:
         )
 
     def collect_gh_response_metrics(
-        self, cred: GitHubCredential, response: requests.Response
+        self, token: GitHubToken, response: requests.Response
     ) -> None:
         metric = self._registry.gauge(
             metric_name="custon_github_ratelimit",
-            credential_name=cred.name,
-            credential_origin=cred.origin.value,
+            credential_name=token.name,
+            credential_origin=token.origin.value,
         )
         remaining = get_ratelimit_remaining(response)
         limit = get_ratelimit_limit(response)

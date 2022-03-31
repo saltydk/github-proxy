@@ -34,7 +34,7 @@ def get_proxy(config: Config, tel_collector: TelemetryCollector) -> Proxy:
 
     return Proxy(
         github_api_url=config.github_api_url,
-        github_credentials_config=config,
+        github_token_config=config,
         cache=CacheBackend.factory(config),
         rate_limited=TLRUCache(
             maxsize=config.github_creds_cache_maxsize,

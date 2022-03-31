@@ -2,7 +2,6 @@ import operator
 from datetime import datetime
 from datetime import timedelta
 from enum import Enum
-from functools import lru_cache
 from typing import Hashable
 from typing import Iterator
 from typing import Mapping
@@ -25,25 +24,43 @@ class GitHubAppConfig(NamedTuple):
     installation_id: int
 
 
-class GitHubCredentialsConfig(Hashable, Protocol):
+class GitHubTokenConfig(Hashable, Protocol):
     github_apps: Mapping[str, GitHubAppConfig]
     github_pats: Mapping[str, str]
     github_creds_cache_maxsize: int
     github_creds_cache_ttl_padding: int
 
 
-class GitHubCredentialOrigin(Enum):
+class GitHubTokenOrigin(Enum):
     USER = "User"
     GITHUB_APP = "GitHub App"
 
 
-class GitHubCredential(NamedTuple):
+class GitHubToken(NamedTuple):
     name: str
-    origin: GitHubCredentialOrigin
-    token: str
+    origin: GitHubTokenOrigin
+    value: str
 
 
-RateLimited = MutableMapping[Tuple[GitHubCredentialOrigin, str], datetime]
+RateLimited = MutableMapping[Tuple[GitHubTokenOrigin, str], datetime]
+
+InstalledIntegration = Tuple[GithubIntegration, int]
+
+
+def construct_installed_integration(
+    app_name: str, config: GitHubTokenConfig, base_url: str
+) -> InstalledIntegration:
+    app_config = config.github_apps[app_name]
+    return (
+        CachedGithubIntegration(
+            integration_id=app_config.id_,
+            private_key=app_config.private_key,
+            base_url=base_url,
+            cache_maxsize=config.github_creds_cache_maxsize,
+            cache_ttl_padding=config.github_creds_cache_ttl_padding,
+        ),
+        app_config.installation_id,
+    )
 
 
 class CachedGithubIntegration(GithubIntegration):
@@ -71,7 +88,6 @@ class CachedGithubIntegration(GithubIntegration):
         cache_maxsize: int,
         cache_ttl_padding: int,
     ) -> None:
-        """Private constructor. Use factory method instead."""
         super().__init__(integration_id, private_key, base_url)
 
         def ttu(_key: str, value: InstallationAuthorization, now: datetime) -> datetime:
@@ -96,53 +112,38 @@ class CachedGithubIntegration(GithubIntegration):
     ) -> InstallationAuthorization:
         return super().get_access_token(installation_id, user_id)
 
-    @staticmethod
-    @lru_cache
-    def factory(
-        app_name: str, config: GitHubCredentialsConfig, base_url: str
-    ) -> GithubIntegration:
-        app_config = config.github_apps[app_name]
-        return CachedGithubIntegration(
-            integration_id=app_config.id_,
-            private_key=app_config.private_key,
-            base_url=base_url,
-            cache_maxsize=config.github_creds_cache_maxsize,
-            cache_ttl_padding=config.github_creds_cache_ttl_padding,
-        )
 
-
-def credential_generator(
-    base_url: str, config: GitHubCredentialsConfig, rate_limited: RateLimited
-) -> Iterator[GitHubCredential]:
+def token_generator(
+    integrations: Mapping[str, InstalledIntegration],
+    pats: Mapping[str, str],
+    rate_limited: RateLimited,
+) -> Iterator[GitHubToken]:
     """
-    Lazy generator of GitHub credentials. Generates both GitHub App
-    and user PAT credentials. Skips rate-limited credentials.
+    Lazy generator of GitHub tokens. Generates both GitHub App
+    and user PAT tokens. Skips rate-limited ones.
     """
     # GitHub apps take precedence
-    for app_name, app_config in config.github_apps.items():
-        if (GitHubCredentialOrigin.GITHUB_APP, app_name) in rate_limited:
+    for app_name, (ghi, installation_id) in integrations.items():
+        if (GitHubTokenOrigin.GITHUB_APP, app_name) in rate_limited:
             # rate-limited apps are skipped
             continue
 
-        ghi = CachedGithubIntegration.factory(app_name, config, base_url)
-        installation_authz = ghi.get_access_token(
-            installation_id=app_config.installation_id
-        )
+        installation_authz = ghi.get_access_token(installation_id=installation_id)
 
-        yield GitHubCredential(
+        yield GitHubToken(
             name=app_name,
-            origin=GitHubCredentialOrigin.GITHUB_APP,
-            token=installation_authz.token,
+            origin=GitHubTokenOrigin.GITHUB_APP,
+            value=installation_authz.token,
         )
 
     # Since there are no more apps, we can now yield GitHub user PATs
-    for pat_name, pat in config.github_pats.items():
-        if (GitHubCredentialOrigin.USER, pat_name) in rate_limited:
+    for pat_name, pat in pats.items():
+        if (GitHubTokenOrigin.USER, pat_name) in rate_limited:
             # rate-limited pats are skipped
             continue
 
-        yield GitHubCredential(
+        yield GitHubToken(
             name=pat_name,
-            origin=GitHubCredentialOrigin.USER,
-            token=pat,
+            origin=GitHubTokenOrigin.USER,
+            value=pat,
         )

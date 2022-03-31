@@ -1,13 +1,17 @@
 import logging
+from functools import cached_property
+from typing import Mapping
 from typing import Optional
 
 import requests
 import werkzeug
 
 from github_proxy.cache.backend import CacheBackend
-from github_proxy.github_credentials import GitHubCredentialsConfig
-from github_proxy.github_credentials import RateLimited
-from github_proxy.github_credentials import credential_generator
+from github_proxy.github_tokens import GitHubTokenConfig
+from github_proxy.github_tokens import InstalledIntegration
+from github_proxy.github_tokens import RateLimited
+from github_proxy.github_tokens import construct_installed_integration
+from github_proxy.github_tokens import token_generator
 from github_proxy.ratelimit import get_ratelimit_reset
 from github_proxy.ratelimit import is_rate_limited
 from github_proxy.telemetry import TelemetryCollector
@@ -23,34 +27,43 @@ class Proxy:
     def __init__(
         self,
         github_api_url: str,
-        github_credentials_config: GitHubCredentialsConfig,
+        github_token_config: GitHubTokenConfig,
         cache: CacheBackend,
         rate_limited: RateLimited,
         tel_collector: TelemetryCollector,
     ) -> None:
         """
         :param github_api_url: Base url of the GitHub API server
-        :param github_credentials_config: Config that collects all the available
+        :param github_token_config: Config that collects all the available
                                           GitHub user PATs and GitHub Apps. This
                                           config object is used during GitHub token
                                           generation.
         :param cache: The purpose of this object is to cache the responses of the
                       GitHub API so that future requests on the same resources can be
                       served by the cache.
-        :param rate_limited: Dictionary to store the GitHub credentials that are known
+        :param rate_limited: Dictionary to store the GitHub tokens that are known
                              to be rate-limited so that the proxy skips them when
                              attempting to connect to GitHub. The `rate_limited` dict
-                             should ideally be a TLRU cache so that credentials that
+                             should ideally be a TLRU cache so that tokens that
                              undergo a rate-limit reset, get automagically removed from
                              the dict.
         :param tel_collector: Object collecting telemetry metrics on various points
                               within the control flow.
         """
         self.github_api_url = github_api_url
-        self.gh_cred_config = github_credentials_config
+        self.gh_token_config = github_token_config
         self.cache = cache
         self.rate_limited = rate_limited
         self.tel_collector = tel_collector
+
+    @cached_property
+    def integrations(self) -> Mapping[str, InstalledIntegration]:
+        return {
+            app_name: construct_installed_integration(
+                app_name, self.gh_token_config, self.github_api_url
+            )
+            for app_name in self.gh_token_config.github_apps
+        }
 
     def request(
         self, path: str, request: werkzeug.Request, client: str
@@ -138,12 +151,12 @@ class Proxy:
         elif etag is not None:
             headers["If-None-Match"] = etag
 
-        for cred in credential_generator(
-            self.github_api_url, self.gh_cred_config, self.rate_limited
+        for token in token_generator(
+            self.integrations, self.gh_token_config.github_pats, self.rate_limited
         ):
-            logger.info("Using %s %s credential", cred.origin.value, cred.name)
+            logger.info("Using %s %s token", token.origin.value, token.name)
             # Adding auth
-            headers["Authorization"] = f"token {cred.token}"
+            headers["Authorization"] = f"token {token.value}"
 
             resp = requests.request(
                 method=request.method.lower(),
@@ -152,16 +165,16 @@ class Proxy:
                 headers=headers,
                 params=request.args.to_dict(),
             )
-            self.tel_collector.collect_gh_response_metrics(cred, resp)
+            self.tel_collector.collect_gh_response_metrics(token, resp)
 
             if is_rate_limited(resp):
                 reset = get_ratelimit_reset(resp)
                 if reset:
-                    self.rate_limited[(cred.origin, cred.name)] = reset
+                    self.rate_limited[(token.origin, token.name)] = reset
                     logger.warning(
-                        "%s %s credential is rate limited. Resetting at %s",
-                        cred.origin.value,
-                        cred.name,
+                        "%s %s is rate limited. Resetting at %s",
+                        token.origin.value,
+                        token.name,
                         reset,
                     )
             else:
@@ -175,7 +188,7 @@ class Proxy:
                     headers=resp.headers.items(),
                 )
 
-        raise RuntimeError("All available GitHub credentials are rate limited")
+        raise RuntimeError("All available GitHub tokens are rate limited")
 
     def health(self) -> bool:
         resp = self.cached_request("zen", werkzeug.Request.from_values(), "healthcheck")
