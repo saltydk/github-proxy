@@ -11,10 +11,9 @@ from github import GithubIntegration
 from github.InstallationAuthorization import InstallationAuthorization
 from requests.structures import CaseInsensitiveDict
 from werkzeug import Request
-from werkzeug.test import EnvironBuilder
 
-from github_proxy.github_credentials import GitHubCredential
-from github_proxy.github_credentials import GitHubCredentialOrigin
+from github_proxy.github_tokens import GitHubToken
+from github_proxy.github_tokens import GitHubTokenOrigin
 from github_proxy.proxy import Proxy
 
 
@@ -38,8 +37,7 @@ def test_proxy_cached_request_cache_hit(
         status_code=304,
     )
 
-    builder = EnvironBuilder(headers=[("Accept", media_type)])
-    request = Request(builder.get_environ())
+    request = Request.from_values(headers=[("Accept", media_type)])
     client = faker.word()
     proxy.tel_collector = mock.Mock()
 
@@ -76,8 +74,7 @@ def test_proxy_cached_request_cache_miss_if_stale_cache_entry(
         headers={"Etag": faker.pystr()},
     )
 
-    builder = EnvironBuilder(headers=[("Accept", media_type)])
-    request = Request(builder.get_environ())
+    request = Request.from_values(headers=[("Accept", media_type)])
     client = faker.word()
     proxy.tel_collector = mock.Mock()
 
@@ -112,8 +109,7 @@ def test_proxy_cached_request_cache_miss_if_no_entry_for_cacheable_resource(
         proxy.github_api_url + path, status_code=200, headers={"Etag": faker.pystr()}
     )
 
-    builder = EnvironBuilder(headers=[("Accept", media_type)])
-    request = Request(builder.get_environ())
+    request = Request.from_values(headers=[("Accept", media_type)])
     client = faker.word()
     proxy.tel_collector = mock.Mock()
 
@@ -149,8 +145,7 @@ def test_proxy_cached_request_does_not_cache_responses_without_cache_headers(
         status_code=200,
     )
 
-    builder = EnvironBuilder(headers=[("Accept", media_type)])
-    request = Request(builder.get_environ())
+    request = Request.from_values(headers=[("Accept", media_type)])
     client = faker.word()
     proxy.tel_collector = mock.Mock()
 
@@ -170,7 +165,7 @@ def test_proxy_cached_request_does_not_cache_responses_without_cache_headers(
 
 
 @mock.patch.object(GithubIntegration, "get_access_token")
-def test_send_gh_request_with_all_credentials_rate_limited(
+def test_send_gh_request_with_all_tokens_rate_limited(
     get_access_token_mock: mock.Mock,
     requests_mock: requests_mock.Mocker,
     proxy: Proxy,
@@ -189,26 +184,21 @@ def test_send_gh_request_with_all_credentials_rate_limited(
         status_code=403,
     )
 
-    builder = EnvironBuilder(method="GET")
-
     with pytest.raises(RuntimeError):
-        proxy._send_gh_request(
-            path=path,
-            request=Request(builder.get_environ()),
-        )
+        proxy._send_gh_request(path=path, request=Request.from_values(method="GET"))
 
     assert len(proxy.rate_limited) == 2
 
 
 @mock.patch.object(GithubIntegration, "get_access_token")
-def test_send_gh_request_with_some_credentials_rate_limited(
+def test_send_gh_request_with_some_tokens_rate_limited(
     get_access_token_mock: mock.Mock,
     requests_mock: requests_mock.Mocker,
     proxy: Proxy,
     faker: Faker,
     installation_authz_factory: Callable[..., InstallationAuthorization],
 ):
-    app_name, *_ = proxy.gh_cred_config.github_apps.keys()
+    app_name, *_ = proxy.gh_token_config.github_apps.keys()
     app_token = faker.pystr()
     get_access_token_mock.return_value = installation_authz_factory(app_token)
 
@@ -234,17 +224,16 @@ def test_send_gh_request_with_some_credentials_rate_limited(
 
     requests_mock.add_matcher(custom_matcher)
 
-    builder = EnvironBuilder(method="GET")
     proxy.tel_collector = mock.Mock()
 
     resp = proxy._send_gh_request(
         path=path,
-        request=Request(builder.get_environ()),
+        request=Request.from_values(method="GET"),
     )
     assert resp.status_code == 201
 
     assert len(proxy.rate_limited) == 1
-    reset_value = proxy.rate_limited[(GitHubCredentialOrigin.GITHUB_APP, app_name)]
+    reset_value = proxy.rate_limited[(GitHubTokenOrigin.GITHUB_APP, app_name)]
     assert isinstance(reset_value, datetime)
 
 
@@ -256,7 +245,7 @@ def test_send_gh_request_collects_telemetry_metrics(
     faker: Faker,
     installation_authz_factory: Callable[..., InstallationAuthorization],
 ):
-    app_name, *_ = proxy.gh_cred_config.github_apps.keys()
+    app_name, *_ = proxy.gh_token_config.github_apps.keys()
     app_token = faker.pystr()
     get_access_token_mock.return_value = installation_authz_factory(app_token)
 
@@ -270,17 +259,16 @@ def test_send_gh_request_collects_telemetry_metrics(
         status_code=200,
     )
 
-    builder = EnvironBuilder(method="GET")
     proxy.tel_collector = mock.Mock()
 
     _ = proxy._send_gh_request(
         path=path,
-        request=Request(builder.get_environ()),
+        request=Request.from_values(method="GET"),
     )
 
     proxy.tel_collector.collect_gh_response_metrics.assert_called_once_with(
-        GitHubCredential(
-            name=app_name, origin=GitHubCredentialOrigin.GITHUB_APP, token=app_token
+        GitHubToken(
+            name=app_name, origin=GitHubTokenOrigin.GITHUB_APP, value=app_token
         ),
         mock.ANY,
     )

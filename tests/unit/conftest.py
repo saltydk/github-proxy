@@ -117,7 +117,7 @@ def cache_backend(config: Config) -> CacheBackend:
 def proxy(config: Config, cache_backend: CacheBackend) -> Proxy:
     return Proxy(
         github_api_url=config.github_api_url,
-        github_credentials_config=config,
+        github_token_config=config,
         cache=cache_backend,
         rate_limited={},
         tel_collector=Mock(),
