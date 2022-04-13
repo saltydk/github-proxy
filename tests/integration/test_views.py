@@ -40,3 +40,28 @@ def test_proxy_view_mutation_requests(client: FlaskClient, test_token: str):
         json={"text": "text"},
     )
     assert resp.status_code == 200
+
+
+@vcr.use_cassette
+def test_caching_proxy_view_uses_query_string_when_indexing_cache(
+    client: FlaskClient, test_token: str
+):
+    resource = "/repos/pallets/werkzeug/pulls"
+    first_page_resp = client.get(
+        resource,
+        headers={"Authorization": f"token {test_token}"},
+        query_string={"state": "closed", "per_page": 10, "page": 1},
+    )
+    assert first_page_resp.status_code == 200
+
+    second_page_resp = client.get(
+        resource,
+        headers={"Authorization": f"token {test_token}"},
+        query_string={"state": "closed", "per_page": 10, "page": 2},
+    )
+    assert second_page_resp.status_code == 200
+
+    # second page response MUST not be a cached response of page 1
+    assert first_page_resp.headers["Link"] != second_page_resp.headers["Link"]
+    for header in ["X-RateLimit-Used", "X-RateLimit-Remaining"]:
+        assert first_page_resp.headers[header] != second_page_resp.headers[header]

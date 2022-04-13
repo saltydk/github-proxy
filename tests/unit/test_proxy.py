@@ -30,14 +30,15 @@ def test_proxy_cached_request_cache_hit(
     path = faker.uri_path()
     cached_response = werkzeug.Response()
     media_type = faker.mime_type()
-    proxy.cache.set(path, media_type, cached_response)
+    qs = f"{faker.word()}={faker.pystr()}"
+    proxy.cache.set(path, qs, media_type, cached_response)
 
     requests_mock.get(
         proxy.github_api_url + path,
         status_code=304,
     )
 
-    request = Request.from_values(headers=[("Accept", media_type)])
+    request = Request.from_values(headers=[("Accept", media_type)], query_string=qs)
     client = faker.word()
     proxy.tel_collector = mock.Mock()
 
@@ -54,6 +55,55 @@ def test_proxy_cached_request_cache_hit(
 
 
 @mock.patch.object(GithubIntegration, "get_access_token")
+def test_proxy_cached_request_cache_miss_when_using_different_qs(
+    get_access_token_mock: mock.Mock,
+    faker: Faker,
+    proxy: Proxy,
+    requests_mock: requests_mock.Mocker,
+    installation_authz_factory: Callable[..., InstallationAuthorization],
+):
+    get_access_token_mock.return_value = installation_authz_factory(faker.pystr())
+
+    path = faker.uri_path()
+    cached_response = werkzeug.Response()
+    media_type = faker.mime_type()
+    qs = f"{faker.word()}={faker.pystr()}"
+    proxy.cache.set(path, qs, media_type, cached_response)
+
+    requests_mock.get(
+        proxy.github_api_url + path + f"?{qs}",
+        status_code=304,
+    )
+
+    modified_qs = qs + faker.pystr()
+
+    requests_mock.get(
+        proxy.github_api_url + path + f"?{modified_qs}",
+        status_code=200,
+        headers={"Etag": faker.pystr()},
+    )
+
+    request = Request.from_values(
+        headers=[("Accept", media_type)], query_string=modified_qs
+    )
+    client = faker.word()
+    proxy.tel_collector = mock.Mock()
+
+    resp = proxy.cached_request(
+        path=path,
+        request=request,
+        client=client,
+    )
+
+    assert resp != cached_response
+    assert proxy.cache.get(path, modified_qs, media_type) != cached_response
+    assert resp == proxy.cache.get(path, modified_qs, media_type)
+    proxy.tel_collector.collect_proxy_request_metrics.assert_called_once_with(
+        client, request, False
+    )
+
+
+@mock.patch.object(GithubIntegration, "get_access_token")
 def test_proxy_cached_request_cache_miss_if_stale_cache_entry(
     get_access_token_mock: mock.Mock,
     faker: Faker,
@@ -65,8 +115,9 @@ def test_proxy_cached_request_cache_miss_if_stale_cache_entry(
 
     path = faker.uri_path()
     media_type = faker.mime_type()
+    qs = f"{faker.word()}={faker.pystr()}"
     cached_response = werkzeug.Response()
-    proxy.cache.set(path, media_type, cached_response)
+    proxy.cache.set(path, qs, media_type, cached_response)
 
     requests_mock.get(
         proxy.github_api_url + path,
@@ -74,7 +125,7 @@ def test_proxy_cached_request_cache_miss_if_stale_cache_entry(
         headers={"Etag": faker.pystr()},
     )
 
-    request = Request.from_values(headers=[("Accept", media_type)])
+    request = Request.from_values(headers=[("Accept", media_type)], query_string=qs)
     client = faker.word()
     proxy.tel_collector = mock.Mock()
 
@@ -85,8 +136,8 @@ def test_proxy_cached_request_cache_miss_if_stale_cache_entry(
     )
 
     assert resp != cached_response
-    assert proxy.cache.get(path, media_type) != cached_response
-    assert resp == proxy.cache.get(path, media_type)
+    assert proxy.cache.get(path, qs, media_type) != cached_response
+    assert resp == proxy.cache.get(path, qs, media_type)
     proxy.tel_collector.collect_proxy_request_metrics.assert_called_once_with(
         client, request, cache_hit=False
     )
@@ -104,16 +155,17 @@ def test_proxy_cached_request_cache_miss_if_no_entry_for_cacheable_resource(
 
     path = faker.uri_path()
     media_type = faker.mime_type()
+    qs = f"{faker.word()}={faker.pystr()}"
 
     requests_mock.get(
         proxy.github_api_url + path, status_code=200, headers={"Etag": faker.pystr()}
     )
 
-    request = Request.from_values(headers=[("Accept", media_type)])
+    request = Request.from_values(headers=[("Accept", media_type)], query_string=qs)
     client = faker.word()
     proxy.tel_collector = mock.Mock()
 
-    assert not proxy.cache.get(path, media_type)
+    assert not proxy.cache.get(path, qs, media_type)
 
     resp = proxy.cached_request(
         path=path,
@@ -121,7 +173,7 @@ def test_proxy_cached_request_cache_miss_if_no_entry_for_cacheable_resource(
         client=client,
     )
 
-    assert resp == proxy.cache.get(path, media_type)
+    assert resp == proxy.cache.get(path, qs, media_type)
     proxy.tel_collector.collect_proxy_request_metrics.assert_called_once_with(
         client, request, False
     )
@@ -139,13 +191,14 @@ def test_proxy_cached_request_does_not_cache_responses_without_cache_headers(
 
     path = faker.uri_path()
     media_type = faker.mime_type()
+    qs = f"{faker.word()}={faker.pystr()}"
 
     requests_mock.get(
         proxy.github_api_url + path,
         status_code=200,
     )
 
-    request = Request.from_values(headers=[("Accept", media_type)])
+    request = Request.from_values(headers=[("Accept", media_type)], query_string=qs)
     client = faker.word()
     proxy.tel_collector = mock.Mock()
 
@@ -156,7 +209,7 @@ def test_proxy_cached_request_does_not_cache_responses_without_cache_headers(
     )
 
     assert isinstance(resp, werkzeug.Response)
-    assert not proxy.cache.get(path, media_type)
+    assert not proxy.cache.get(path, qs, media_type)
     proxy.tel_collector.collect_proxy_request_metrics.assert_called_once_with(
         client,
         request,
