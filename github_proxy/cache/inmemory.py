@@ -16,11 +16,13 @@ class InMemoryCache(CacheBackend, scheme="inmemory"):
             maxsize=1024, ttl=self.config.cache_ttl
         )
 
-    def _cached_key(self, resource: str, representation: str) -> str:
-        return f"{resource}/{representation}"
+    def _make_key(
+        self, resource: str, filter_: Optional[str], representation: str
+    ) -> str:
+        return f"{resource}/{filter_}/{representation}"
 
-    def _get(self, resource: str, representation: str) -> Optional[Value]:
-        return self._store.get(self._cached_key(resource, representation))
+    def _get(self, key: str) -> Optional[Value]:
+        return self._store.get(key)
 
-    def _set(self, resource: str, representation: str, value: Value) -> None:
-        self._store[self._cached_key(resource, representation)] = value
+    def _set(self, key: str, value: Value) -> None:
+        self._store[key] = value
