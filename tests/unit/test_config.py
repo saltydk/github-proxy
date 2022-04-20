@@ -36,12 +36,12 @@ def test_config_collect_github_apps(faker: Faker):
     assert apps[app_name_2].private_key == app_pem_2
 
 
-def test_config_collect_github_pats(faker: Faker):
+def test_config_collect_github_pats():
     pat_name_1 = "foo"
-    pat_1 = faker.pystr()
+    pat_1 = "one"
 
     pat_name_2 = "bar"
-    pat_2 = faker.pystr()
+    pat_2 = "two"
 
     config_dict = {
         f"GITHUB_PAT_{pat_name_1.upper()}": pat_1,
@@ -56,11 +56,11 @@ def test_config_collect_github_pats(faker: Faker):
     assert pats[pat_name_2] == pat_2
 
 
-def test_config_collect_tokens(faker: Faker):
-    token_name_1 = faker.word().lower()
+def test_config_collect_tokens():
+    token_name_1 = "one"
     token_1 = "foo"
 
-    token_name_2 = faker.word().lower()
+    token_name_2 = "two"
     token_2 = "bar"
 
     config_dict = {
