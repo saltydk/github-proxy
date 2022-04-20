@@ -56,6 +56,16 @@ class Proxy:
         self.rate_limited = rate_limited
         self.tel_collector = tel_collector
 
+        # Since all proxy transactions eventually hit the same GitHub host, it is
+        # preferred to re-use TCP connections (connection pooling). The requests.Session
+        # object offers this functionality, however it also persists Cookies across
+        # requests, which could lead to cookies being shared across completely separate
+        # clients.
+        # As of today, the GitHub REST API does not make any use of cookies,
+        # hence it is safe to use a single cookie persisting session across all clients.
+        # If this changes in the future, we could switch to having a session per client.
+        self.requester = requests.Session()
+
     @cached_property
     def integrations(self) -> Mapping[str, InstalledIntegration]:
         return {
@@ -160,7 +170,7 @@ class Proxy:
             # Adding auth
             headers["Authorization"] = f"token {token.value}"
 
-            resp = requests.request(
+            resp = self.requester.request(
                 method=request.method.lower(),
                 url=f'{self.github_api_url.rstrip("/")}/{path}',
                 data=request.data,
