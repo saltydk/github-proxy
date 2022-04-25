@@ -19,8 +19,20 @@ from github_proxy.telemetry import TelemetryCollector
 logger = logging.getLogger(__name__)
 
 
-REQUEST_FILTERED_HEADERS = {"Connection", "Host"}
-RESPONSE_FILTERED_HEADERS = {"Content-Length", "Content-Encoding", "Transfer-Encoding"}
+# As per RFC 2616 https://datatracker.ietf.org/doc/html/rfc2616#section-13.5.1
+# hop-by-hop headers must not be forwarded by the proxy
+HOP_BY_HOP_HEADERS = {
+    "Connection",
+    "Proxy-Connection",
+    "Keep-Alive",
+    "Transfer-Encoding",
+    "TE",
+    "Te",
+    "Trailer",
+    "Upgrade",
+    "Proxy-Authorization",
+    "Proxy-Authenticate",
+}
 
 
 class Proxy:
@@ -145,9 +157,7 @@ class Proxy:
     ) -> werkzeug.Response:
         # Filter request headers
         headers = {
-            k: v
-            for k, v in request.headers.items()
-            if k not in REQUEST_FILTERED_HEADERS
+            k: v for k, v in request.headers.items() if k not in HOP_BY_HOP_HEADERS
         }
 
         # Adding cache headers:
@@ -191,11 +201,11 @@ class Proxy:
                     )
             else:
                 # Filter response headers
-                for h in RESPONSE_FILTERED_HEADERS:
+                for h in HOP_BY_HOP_HEADERS:
                     resp.headers.pop(h, None)
 
                 return werkzeug.Response(
-                    response=resp.text,
+                    response=resp.content,
                     status=resp.status_code,
                     headers=resp.headers.items(),
                 )
