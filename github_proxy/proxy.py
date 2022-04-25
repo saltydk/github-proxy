@@ -34,6 +34,13 @@ HOP_BY_HOP_HEADERS = {
     "Proxy-Authenticate",
 }
 
+# The host header should be automatically rewritten to the URL of the request target
+# (ie api.github.com)
+REQUEST_FILTERED_HEADERS = {"Host", *HOP_BY_HOP_HEADERS}
+
+# Content-Length and Encoding headers are removed to prevent bad framing
+RESPONSE_FILTERED_HEADERS = {"Content-Length", "Content-Encoding", *HOP_BY_HOP_HEADERS}
+
 
 class Proxy:
     def __init__(
@@ -157,7 +164,9 @@ class Proxy:
     ) -> werkzeug.Response:
         # Filter request headers
         headers = {
-            k: v for k, v in request.headers.items() if k not in HOP_BY_HOP_HEADERS
+            k: v
+            for k, v in request.headers.items()
+            if k not in REQUEST_FILTERED_HEADERS
         }
 
         # Adding cache headers:
@@ -201,7 +210,7 @@ class Proxy:
                     )
             else:
                 # Filter response headers
-                for h in HOP_BY_HOP_HEADERS:
+                for h in RESPONSE_FILTERED_HEADERS:
                     resp.headers.pop(h, None)
 
                 return werkzeug.Response(
