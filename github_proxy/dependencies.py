@@ -41,19 +41,12 @@ def get_proxy(config: Config, tel_collector: TelemetryCollector) -> Proxy:
             ttu=time_to_use,
             timer=datetime.now,
         ),
+        clients=config.clients,
         tel_collector=tel_collector,
     )
 
 
 T = TypeVar("T")
-
-
-def inject_tel_collector(func: Callable[..., T]) -> Callable[..., T]:
-    @wraps(func)
-    def wrapper(*args: Any, **kwargs: Any) -> T:
-        return func(*args, tel_collector=get_tel_collector(), **kwargs)
-
-    return wrapper
 
 
 def inject_proxy(func: Callable[..., T]) -> Callable[..., T]:
@@ -68,20 +61,5 @@ def inject_proxy(func: Callable[..., T]) -> Callable[..., T]:
         tel_collector = get_tel_collector()
         proxy = get_proxy(config, tel_collector)
         return func(*args, proxy=proxy, **kwargs)
-
-    return wrapper
-
-
-def inject_tokens(func: Callable[..., T]) -> Callable[..., T]:
-    """
-    This decorator injects the `tokens` dictionary that maps
-    proxy client tokens to client names. This dictionary is used
-    for authenticating all incoming proxy requests.
-    """
-
-    @wraps(func)
-    def wrapper(*args: Any, **kwargs: Any) -> T:
-        config = get_config()
-        return func(*args, tokens=config.tokens, **kwargs)
 
     return wrapper

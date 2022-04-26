@@ -1,10 +1,40 @@
 import os
+import re
+from dataclasses import dataclass
+from dataclasses import field
+from pathlib import Path
+from typing import Any
+from typing import Dict
 from typing import Mapping
 from typing import Optional
+from typing import Sequence
+
+import yaml
+from dacite.config import Config as DaciteConfig
+from dacite.core import from_dict
+from jinja2 import Environment
+from jinja2 import FileSystemLoader
 
 from github_proxy.cache.backend import CacheBackendConfig
 from github_proxy.github_tokens import GitHubAppConfig
 from github_proxy.github_tokens import GitHubTokenConfig
+from github_proxy.proxy import ProxyClient
+from github_proxy.proxy import validate_clients
+
+_DESERIALIZATION_CONFIG = DaciteConfig(type_hooks={re.Pattern: re.compile})
+
+
+@dataclass
+class ClientRegistry:
+    version: int = 1
+    clients: Sequence[ProxyClient] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        validate_clients(self.clients)
+
+    @classmethod
+    def deserialize(cls, data: Dict[str, Any]) -> "ClientRegistry":
+        return from_dict(cls, data, config=_DESERIALIZATION_CONFIG)
 
 
 class Config(GitHubTokenConfig, CacheBackendConfig):
@@ -32,16 +62,31 @@ class Config(GitHubTokenConfig, CacheBackendConfig):
             config_dict.get("GITHUB_CREDS_CACHE_TTL_PADDING", "10")
         )
 
-        # Collecting tokens of proxy clients:
-        self.tokens = Config._collect_tokens(config_dict)
+        # Collecting proxy client configuration
+        self.clients = Config._collect_clients(config_dict)
 
     @staticmethod
-    def _collect_tokens(config_dict: Mapping[str, str]) -> Mapping[str, str]:
-        return {
-            token: env[len("TOKEN_") :].lower()
-            for env, token in config_dict.items()
-            if env.startswith("TOKEN_")
-        }
+    def _collect_clients(
+        config_dict: Mapping[str, str], j2_env: Optional[Environment] = None
+    ) -> Sequence[ProxyClient]:
+        fp = Path(config_dict["CLIENT_REGISTRY_FILE_PATH"])
+
+        def read_file_content(fp: Path, j2_env: Optional[Environment] = None) -> str:
+            if fp.suffix == ".j2":
+                environment = j2_env or Environment(
+                    loader=FileSystemLoader(searchpath=fp.parent)
+                )
+                template = environment.get_template(name=fp.name)
+                return template.render(env=config_dict)
+
+            with fp.open() as f:
+                return f.read()
+
+        client_registry = ClientRegistry.deserialize(
+            yaml.safe_load(read_file_content(fp, j2_env))
+        )
+
+        return client_registry.clients
 
     @staticmethod
     def _collect_github_pats(config_dict: Mapping[str, str]) -> Mapping[str, str]:

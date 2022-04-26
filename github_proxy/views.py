@@ -1,5 +1,3 @@
-import logging
-from typing import Mapping
 from typing import Optional
 
 import werkzeug
@@ -8,20 +6,16 @@ from flask import request
 from flask_httpauth import HTTPTokenAuth  # type: ignore
 
 from github_proxy.dependencies import inject_proxy
-from github_proxy.dependencies import inject_tokens
 from github_proxy.proxy import Proxy
-
-logger = logging.getLogger(__name__)
-
 
 blueprint = Blueprint("github_proxy", __name__)
 auth = HTTPTokenAuth(scheme="token")
 
 
 @auth.verify_token  # type: ignore
-@inject_tokens
-def verify_token(token: str, tokens: Mapping[str, str]) -> Optional[str]:
-    return tokens.get(token)
+@inject_proxy
+def verify_token(token: str, proxy: Proxy) -> Optional[str]:
+    return proxy.auth(token, request)
 
 
 @blueprint.route("/<path:path>", methods=["GET"])

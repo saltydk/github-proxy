@@ -1,7 +1,10 @@
 import logging
+import re
+from dataclasses import dataclass
 from functools import cached_property
 from typing import Mapping
 from typing import Optional
+from typing import Sequence
 
 import requests
 import werkzeug
@@ -41,6 +44,35 @@ REQUEST_FILTERED_HEADERS = {"Host", *HOP_BY_HOP_HEADERS}
 # Content-Length and Encoding headers are removed to prevent bad framing
 RESPONSE_FILTERED_HEADERS = {"Content-Length", "Content-Encoding", *HOP_BY_HOP_HEADERS}
 
+MATCH_ALL = re.compile(r".*")
+
+
+@dataclass
+class ProxyClientScope:
+    method: re.Pattern = MATCH_ALL  # type: ignore
+    path: re.Pattern = MATCH_ALL  # type: ignore
+
+
+@dataclass
+class ProxyClient:
+    token: str
+    name: str
+    scopes: Sequence[ProxyClientScope] = (ProxyClientScope(),)
+
+
+def validate_clients(clients: Sequence[ProxyClient]) -> None:
+    taken_tokens = set()
+    taken_names = set()
+    for client in clients:
+        if client.token in taken_tokens:
+            raise ValueError("Duplicate client token found")
+
+        if client.name in taken_names:
+            raise ValueError(f"Duplicate client name found: {client.name}")
+
+        taken_tokens.add(client.token)
+        taken_names.add(client.name)
+
 
 class Proxy:
     def __init__(
@@ -50,6 +82,7 @@ class Proxy:
         cache: CacheBackend,
         rate_limited: RateLimited,
         tel_collector: TelemetryCollector,
+        clients: Sequence[ProxyClient] = (),
     ) -> None:
         """
         :param github_api_url: Base url of the GitHub API server
@@ -71,6 +104,10 @@ class Proxy:
         """
         self.github_api_url = github_api_url
         self.gh_token_config = github_token_config
+        validate_clients(clients)
+        self.client_tokens = {
+            client.token: (client.name, client.scopes) for client in clients
+        }
         self.cache = cache
         self.rate_limited = rate_limited
         self.tel_collector = tel_collector
@@ -84,6 +121,21 @@ class Proxy:
         # hence it is safe to use a single cookie persisting session across all clients.
         # If this changes in the future, we could switch to having a session per client.
         self.requester = requests.Session()
+
+    def auth(self, token: str, request: werkzeug.Request) -> Optional[str]:
+        if token in self.client_tokens:
+            name, scopes = self.client_tokens[token]
+
+            request_path = request.path[len("/api/v3") :]
+
+            for scope in scopes:
+                method_match = scope.method.match(
+                    request.method.lower()
+                ) or scope.method.match(request.method.upper())
+                if method_match and scope.path.match(request_path):
+                    return name
+
+        return None
 
     @cached_property
     def integrations(self) -> Mapping[str, InstalledIntegration]:
