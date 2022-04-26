@@ -65,3 +65,22 @@ def test_caching_proxy_view_uses_query_string_when_indexing_cache(
     assert first_page_resp.headers["Link"] != second_page_resp.headers["Link"]
     for header in ["X-RateLimit-Used", "X-RateLimit-Remaining"]:
         assert first_page_resp.headers[header] != second_page_resp.headers[header]
+
+
+@vcr.use_cassette
+def test_read_only_client_is_not_authorized_to_mutate_resources(
+    client: FlaskClient, read_only_token: str
+):
+    # First we assert that the client can indeed read resources
+    resp = client.get("/zen", headers={"Authorization": f"token {read_only_token}"})
+    assert resp.status_code == 200
+
+    resp = client.post(
+        "/markdown",
+        headers={
+            "Authorization": f"token {read_only_token}",
+            "Accept": "application/vnd.github.v3+json",
+        },
+        json={"text": "text"},
+    )
+    assert resp.status_code == 401

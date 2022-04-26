@@ -1,5 +1,6 @@
 import os
 import secrets
+from pathlib import Path
 from typing import Iterator
 
 import pytest
@@ -11,11 +12,17 @@ from flask.testing import FlaskClient
 from github_proxy import blueprint
 
 _TEST_TOKEN = secrets.token_hex()
+_READONLY_TOKEN = secrets.token_hex()
 
 
 @pytest.fixture
 def test_token() -> str:
     return _TEST_TOKEN
+
+
+@pytest.fixture
+def read_only_token() -> str:
+    return _READONLY_TOKEN
 
 
 @pytest.fixture
@@ -26,7 +33,18 @@ def fake_cert() -> str:
 
 
 @pytest.fixture
-def integration_env(test_token: str, faker: Faker, fake_cert: str) -> None:
+def client_registry_file_path() -> Path:
+    return Path(__file__).parent / "fixtures" / "clients.example.yml.j2"
+
+
+@pytest.fixture
+def integration_env(
+    test_token: str,
+    read_only_token: str,
+    faker: Faker,
+    fake_cert: str,
+    client_registry_file_path: Path,
+) -> None:
     test_gh_app_pem = os.environ.get("GITHUB_APP_TEST_PEM", fake_cert)
     test_gh_app_id = os.environ.get("GITHUB_APP_TEST_ID", str(faker.pyint()))
     test_gh_app_installation_id = os.environ.get(
@@ -34,9 +52,11 @@ def integration_env(test_token: str, faker: Faker, fake_cert: str) -> None:
     )
     os.environ.clear()
     os.environ["TOKEN_TEST"] = test_token
+    os.environ["TOKEN_READ_ONLY"] = read_only_token
     os.environ["GITHUB_APP_TEST_PEM"] = test_gh_app_pem
     os.environ["GITHUB_APP_TEST_ID"] = test_gh_app_id
     os.environ["GITHUB_APP_TEST_INSTALLATION_ID"] = test_gh_app_installation_id
+    os.environ["CLIENT_REGISTRY_FILE_PATH"] = str(client_registry_file_path)
 
     # Caching GitHub tokens entails the risk of re-using cached tokens
     # across different tests. This might cause the silent rise of

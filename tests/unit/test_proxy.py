@@ -1,5 +1,7 @@
+import re
 from datetime import datetime
 from typing import Callable
+from typing import Sequence
 from unittest import mock
 
 import pytest
@@ -15,6 +17,7 @@ from werkzeug import Request
 from github_proxy.github_tokens import GitHubToken
 from github_proxy.github_tokens import GitHubTokenOrigin
 from github_proxy.proxy import Proxy
+from github_proxy.proxy import ProxyClientScope
 
 
 @mock.patch.object(GithubIntegration, "get_access_token")
@@ -351,3 +354,65 @@ def test_health(
     )
 
     assert proxy.health() is expected_result
+
+
+@pytest.mark.parametrize(
+    argnames=["name", "scopes", "proxy_request", "decision"],
+    argvalues=[
+        (
+            "admin",
+            [ProxyClientScope(method=re.compile(r".*"), path=re.compile(r".*"))],
+            Request.from_values(method="DELETE", path="/orgs/babylonhealth"),
+            True,
+        ),
+        (
+            "read_only",
+            [ProxyClientScope(method=re.compile("GET"), path=re.compile(r".*"))],
+            Request.from_values(method="GET", path="/orgs/babylonhealth"),
+            True,
+        ),
+        (
+            "read_only",
+            [ProxyClientScope(method=re.compile("GET"), path=re.compile(r".*"))],
+            Request.from_values(method="DELETE", path="/orgs/babylonhealth"),
+            False,
+        ),
+        (
+            "cyrus_team",
+            [
+                ProxyClientScope(
+                    method=re.compile(r".*"), path=re.compile(r"/repos/bbln/cyrus/.*")
+                )
+            ],
+            Request.from_values(
+                method="DELETE", path="/api/v3/repos/bbln/cyrus/issues/1"
+            ),
+            True,
+        ),
+    ],
+    ids=[
+        "client_with_default_full_access_scope_can_mutate_resources",
+        "read_only_client_can_get_resources",
+        "read_only_client_cannot_mutate_resources",
+        "api_v3_is_stripped_when_matching_path",
+    ],
+)
+def test_auth_for_registered_clients(
+    name: str,
+    scopes: Sequence[ProxyClientScope],
+    proxy_request: werkzeug.Request,
+    decision: bool,
+    proxy: Proxy,
+    faker: Faker,
+):
+    token = faker.pystr()
+    proxy.client_tokens = {token: (name, scopes)}
+    assert (proxy.auth(token, proxy_request) == name) is decision
+
+
+def test_auth_for_unnknown_client_fails(
+    faker: Faker,
+    proxy: Proxy,
+):
+    proxy.client_tokens = {}
+    assert not proxy.auth(faker.pystr(), Request.from_values(method="GET", path="/zen"))

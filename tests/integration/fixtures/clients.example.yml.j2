@@ -1,0 +1,11 @@
+---
+version: 1
+clients:
+  - name: test
+    token: {{ env.TOKEN_TEST }}
+  - name: read_only
+    token: {{ env.TOKEN_READ_ONLY }}
+    scopes:
+    - method: GET
+      path: .*
+...

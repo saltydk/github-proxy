@@ -1,6 +1,15 @@
+import os
+import re
+from pathlib import Path
+from unittest.mock import mock_open
+from unittest.mock import patch
+
 from faker import Faker
+from jinja2 import DictLoader
+from jinja2 import Environment
 
 from github_proxy.config import Config
+from github_proxy.proxy import ProxyClientScope
 
 
 def test_config_collect_github_apps(faker: Faker):
@@ -56,21 +65,95 @@ def test_config_collect_github_pats():
     assert pats[pat_name_2] == pat_2
 
 
-def test_config_collect_tokens():
+def test_config_collect_clients_from_yaml_file(faker: Faker):
     token_name_1 = "one"
     token_1 = "foo"
 
     token_name_2 = "two"
     token_2 = "bar"
+    scope_2_method = "GET"
+    scope_2_path = ".*"
 
+    client_registry_file_content = f"""---
+version: 1
+clients:
+- name: {token_name_1}
+  token: {token_1}
+- name: {token_name_2}
+  token: {token_2}
+  scopes:
+  - method: {scope_2_method}
+    path: {scope_2_path}
+...
+    """
     config_dict = {
-        f"TOKEN_{token_name_1.upper()}": token_1,
-        f"TOKEN_{token_name_2.upper()}": token_2,
+        "CLIENT_REGISTRY_FILE_PATH": faker.uri_path(),
+    }
+    with patch.object(Path, "open", mock_open(read_data=client_registry_file_content)):
+        clients = Config._collect_clients(config_dict)
+
+    assert len(clients) == 2
+
+    for client in clients:
+        if client.name == token_name_1:
+            assert client.token == token_1
+            assert list(client.scopes) == [ProxyClientScope()]
+        elif client.name == token_name_2:
+            assert client.token == token_2
+            assert list(client.scopes) == [
+                ProxyClientScope(
+                    method=re.compile(scope_2_method), path=re.compile(scope_2_path)
+                )
+            ]
+        else:
+            assert False
+
+
+def test_config_collect_clients_from_j2_file(faker: Faker):
+    token_name_1 = "one"
+    token_1 = "foo"
+
+    token_name_2 = "two"
+    token_2 = "bar"
+    scope_2_method = "GET"
+    scope_2_path = ".*"
+
+    client_registry_file_content = f"""---
+version: 1
+clients:
+- name: {token_name_1}
+  token: {{{{ env.TOKEN_{token_name_1} }}}}
+- name: {token_name_2}
+  token: {{{{ env.TOKEN_{token_name_2} }}}}
+  scopes:
+  - method: {scope_2_method}
+    path: {scope_2_path}
+...
+    """
+    template_name = faker.word() + ".j2"
+    config_dict = {
+        "CLIENT_REGISTRY_FILE_PATH": os.path.join(faker.uri_path(), template_name),
+        f"TOKEN_{token_name_1}": token_1,
+        f"TOKEN_{token_name_2}": token_2,
     }
 
-    tokens = Config._collect_tokens(config_dict)
+    j2_env = Environment(
+        loader=DictLoader({template_name: client_registry_file_content})
+    )
+    clients = Config._collect_clients(config_dict, j2_env)
 
-    assert len(tokens) == 2
+    assert len(clients) == 2
 
-    assert tokens[token_1] == token_name_1
-    assert tokens[token_2] == token_name_2
+    for client in clients:
+        if client.name == token_name_1:
+            assert client.token == token_1
+            assert list(client.scopes) == [ProxyClientScope()]
+        elif client.name == token_name_2:
+            assert client.token == token_2
+            assert list(client.scopes) == [
+                ProxyClientScope(
+                    method=re.compile(scope_2_method), path=re.compile(scope_2_path)
+                )
+            ]
+        else:
+            assert False
