@@ -55,8 +55,20 @@ class ProxyClientScope:
 
 @dataclass
 class ProxyClient:
-    token: str
+    """
+    A client that is authorized to use the proxy
+
+    :param name: Human readable name of the client. Used for logging and
+                 telemetry purposes. No two clients must share the same name.
+    :param token: Authorization token of the client. This is a secret shared
+                  between the client and the proxy. No two clients must share
+                  the same token.
+    :param scopes: List of scopes that determine the resources that the client
+                   has access to. Defaults to full access.
+    """
+
     name: str
+    token: str
     scopes: Sequence[ProxyClientScope] = (ProxyClientScope(),)
 
 
@@ -87,9 +99,8 @@ class Proxy:
         """
         :param github_api_url: Base url of the GitHub API server
         :param github_token_config: Config that collects all the available
-                                          GitHub user PATs and GitHub Apps. This
-                                          config object is used during GitHub token
-                                          generation.
+                                    GitHub user PATs and GitHub Apps. This config
+                                    object is used during GitHub token generation.
         :param cache: The purpose of this object is to cache the responses of the
                       GitHub API so that future requests on the same resources can be
                       served by the cache.
@@ -101,6 +112,8 @@ class Proxy:
                              the dict.
         :param tel_collector: Object collecting telemetry metrics on various points
                               within the control flow.
+        :param clients: Clients that are authorized to use the proxy. The list must not
+                        contain duplicate client names or tokens.
         """
         self.github_api_url = github_api_url
         self.gh_token_config = github_token_config
@@ -123,6 +136,12 @@ class Proxy:
         self.requester = requests.Session()
 
     def auth(self, token: str, request: werkzeug.Request) -> Optional[str]:
+        """
+        Authorize an incoming proxy request
+
+        :param token: Authorization token of the client. See ``ProxyClient.token``.
+        :request: The request object received by the client.
+        """
         if token in self.client_tokens:
             name, scopes = self.client_tokens[token]
 
@@ -149,6 +168,15 @@ class Proxy:
     def request(
         self, path: str, request: werkzeug.Request, client: str
     ) -> werkzeug.Response:
+        """
+        Proxy a request to the GitHub origin without using the cache.
+        Should be used for mutative requests.
+
+        :path: Path of the requested resource, without the potential /api/v3
+               prefix.
+        :request: The request object received by the client.
+        :client: The name of the client (see ``ProxyClient.name``).
+        """
         logger.info("%s client requesting %s %s", client, request.method, path)
         self.tel_collector.collect_proxy_request_metrics(client, request)
         return self._send_gh_request(path, request)
@@ -156,6 +184,16 @@ class Proxy:
     def cached_request(
         self, path: str, request: werkzeug.Request, client: str
     ) -> werkzeug.Response:
+        """
+        Proxy a request for a cacheable resource to the GitHub origin. Return
+        a cached response if present and valid, else forward the request to
+        GitHub.
+
+        :path: Path of the requested resource, without the potential /api/v3
+               prefix.
+        :request: The request object received by the client.
+        :client: The name of the client (see ``ProxyClient.name``).
+        """
         media_type = request.accept_mimetypes.best
         qs = request.query_string.decode() or None
         logger.info(
@@ -274,5 +312,8 @@ class Proxy:
         raise RuntimeError("All available GitHub tokens are rate limited")
 
     def health(self) -> bool:
+        """
+        Check that the proxy can successfully integrate with the GitHub origin.
+        """
         resp = self.cached_request("zen", werkzeug.Request.from_values(), "healthcheck")
         return resp.status_code == 200
