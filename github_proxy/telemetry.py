@@ -43,4 +43,15 @@ class TelemetryCollector(ABC):
 
 
 class NoopTelemetryCollector(TelemetryCollector, type_="noop"):
-    pass
+    def collect_gh_response_metrics(
+        self, token: GitHubToken, response: requests.Response
+    ) -> None:
+        ...
+
+    def collect_proxy_request_metrics(
+        self,
+        client: str,
+        request: werkzeug.Request,
+        cache_hit: Optional[bool] = None,
+    ) -> None:
+        ...
