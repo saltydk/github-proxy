@@ -65,6 +65,11 @@ class Config(GitHubTokenConfig, CacheBackendConfig):
         # Collecting proxy client configuration
         self.clients = Config._collect_clients(config_dict)
 
+        # Configuring the telemetry collector
+        self.tel_collector_type = os.environ.get(
+            "TELEMETRY_COLLECTOR_TYPE", "NOOP"
+        ).lower()
+
     @staticmethod
     def _collect_clients(
         config_dict: Mapping[str, str], j2_env: Optional[Environment] = None

@@ -1,60 +1,46 @@
-import os
-from time import time
+from abc import ABC
+from abc import abstractmethod
+from typing import ClassVar
+from typing import MutableMapping
 from typing import Optional
+from typing import Type
 
 import requests
 import werkzeug
-from prom_night import Registry  # type: ignore
 
 from github_proxy.github_tokens import GitHubToken
-from github_proxy.ratelimit import get_ratelimit_limit
-from github_proxy.ratelimit import get_ratelimit_remaining
-from github_proxy.ratelimit import get_ratelimit_reset
 
 
-class TelemetryCollector:
-    def __init__(self) -> None:
-        self._registry = Registry(
-            default_labels={
-                "service": os.getenv("SERVICE_NAME", "UNKNOWN"),
-                "environment": os.getenv("ENV_NAME", "UNKNOWN"),
-                "region": os.getenv("REGION_NAME", "UNKNOWN"),
-            }
-        )
+class TelemetryCollector(ABC):
+    _registry: ClassVar[MutableMapping[str, Type["TelemetryCollector"]]] = {}
+    type_: ClassVar[str]
 
+    def __init_subclass__(cls, type_: str) -> None:
+        cls._registry[type_] = cls
+        cls.type_ = type_
+
+    @abstractmethod
     def collect_gh_response_metrics(
         self, token: GitHubToken, response: requests.Response
     ) -> None:
-        metric = self._registry.gauge(
-            metric_name="custon_github_ratelimit",
-            credential_name=token.name,
-            credential_origin=token.origin.value,
-        )
-        remaining = get_ratelimit_remaining(response)
-        limit = get_ratelimit_limit(response)
-        reset = get_ratelimit_reset(response)
+        ...
 
-        if remaining is not None:
-            metric.labels(field="remaining").set(remaining)
-
-        if limit is not None:
-            metric.labels(field="limit").set(limit)
-
-        if reset is not None:
-            metric.labels(field="reset_timestamp").set(reset.timestamp())
-            metric.labels(field="reset").set(max(0, reset.timestamp() - time()))
-
+    @abstractmethod
     def collect_proxy_request_metrics(
         self,
         client: str,
         request: werkzeug.Request,
         cache_hit: Optional[bool] = None,
     ) -> None:
-        metric = self._registry.counter(
-            metric_name="custom_github_proxy_request",
-            client=client,
-            http_method=request.method,
-            cache_hit=cache_hit,
-        )
+        ...
 
-        metric.inc()
+    @classmethod
+    def from_type(cls, type_: str) -> "TelemetryCollector":
+        if type_ not in cls._registry:
+            raise RuntimeError(f"{type_} telemetry collector not found")
+
+        return cls._registry[type_]()
+
+
+class NoopTelemetryCollector(TelemetryCollector, type_="noop"):
+    pass

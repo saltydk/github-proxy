@@ -20,12 +20,7 @@ def get_config() -> Config:
 
 
 @lru_cache
-def get_tel_collector() -> TelemetryCollector:
-    return TelemetryCollector()
-
-
-@lru_cache
-def get_proxy(config: Config, tel_collector: TelemetryCollector) -> Proxy:
+def get_proxy(config: Config) -> Proxy:
     def time_to_use(_key: str, value: datetime, now: datetime) -> datetime:
         # Derives the expiration time of the added value.
         # The padding addition below is a safeguard accounting for
@@ -42,7 +37,7 @@ def get_proxy(config: Config, tel_collector: TelemetryCollector) -> Proxy:
             timer=datetime.now,
         ),
         clients=config.clients,
-        tel_collector=tel_collector,
+        tel_collector=TelemetryCollector.from_type(config.tel_collector_type),
     )
 
 
@@ -58,8 +53,7 @@ def inject_proxy(func: Callable[..., T]) -> Callable[..., T]:
     @wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> T:
         config = get_config()
-        tel_collector = get_tel_collector()
-        proxy = get_proxy(config, tel_collector)
+        proxy = get_proxy(config)
         return func(*args, proxy=proxy, **kwargs)
 
     return wrapper
