@@ -4,7 +4,11 @@ from typing import Sequence
 from typing import Tuple
 
 import werkzeug
-from redis import Redis
+
+try:
+    import redis
+except ImportError:
+    redis = None  # type: ignore
 
 from github_proxy.cache.backend import CacheBackend
 from github_proxy.cache.backend import CacheBackendConfig
@@ -28,8 +32,16 @@ def deserialize_value(value: SerializedValue) -> Value:
 
 class RedisCache(CacheBackend, scheme="redis"):
     def __init__(self, config: CacheBackendConfig):
+        if redis is None:
+            raise RuntimeError(
+                "The redis package needs to be installed in order to "
+                "use the redis cache backend: pip install github-proxy[redis]"
+            )
+
         super().__init__(config)
-        self._client = Redis.from_url(config.cache_backend_url, decode_responses=True)
+        self._client = redis.Redis.from_url(
+            config.cache_backend_url, decode_responses=True
+        )
 
     def _make_key(
         self, resource: str, filter_: Optional[str], representation: str
