@@ -1,0 +1,120 @@
+version: 2.1
+
+prelude: &prelude
+  docker:
+  - image: cimg/python:3.9
+  working_directory: ~/github-proxy
+  environment:
+    CC_TEST_REPORTER_ID: 7547c58d998c7d3c0bc9bc28b992d1b6ff868d22256528f71cc3312de3d35bfc
+
+only_master: &only_master
+  filters:
+    branches:
+      only:
+      - master
+
+only_tagged: &only_tagged
+  filters:
+    branches:
+      ignore:
+      - /^.*$/
+    tags:
+      only:
+      - /^\d+\.\d+\.\d+$/
+
+restore_venv: &restore_venv
+  restore_cache:
+    keys:
+    - deps-github-proxy-{{ checksum "poetry.lock" }}
+
+update_venv: &update_venv
+  run:
+    name: Install requirements
+    command: |
+      make install
+
+save_venv: &save_venv
+  save_cache:
+    key: deps-github-proxy-{{ checksum "poetry.lock" }}
+    paths:
+    - /home/circleci/.cache/pypoetry/virtualenvs
+
+setup_code_climate: &setup_code_climate
+  run:
+    name: setup code climate
+    command: |
+      curl -L -o cc-test-reporter https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64
+      chmod +x cc-test-reporter
+      ./cc-test-reporter before-build
+
+upload_code_climate: &upload_code_climate
+  run:
+    name: upload coverage results
+    command: ./cc-test-reporter after-build -t coverage.py --exit-code $?
+
+workflows:
+  version: 2
+  test-and-build:
+    jobs:
+    - venv:
+        context: babylon
+    - staticchecks:
+        requires:
+          - venv
+    - test-unit:
+        requires:
+          - venv
+    - test-integration:
+        requires:
+          - test-unit
+    - publish:
+        context: babylon-python-package
+        <<: *only_tagged
+
+jobs:
+  venv:
+    <<: *prelude
+    steps:
+    - checkout
+    - *restore_venv
+    - *update_venv
+    - *save_venv
+
+  staticchecks:
+    <<: *prelude
+    steps:
+    - checkout
+    - *restore_venv
+    - run:
+        command: |
+          poetry run make lint
+          poetry run make typecheck
+
+  test-unit:
+    <<: *prelude
+    steps:
+    - checkout
+    - *restore_venv
+    - run:
+        command: |
+          poetry run make test-unit
+    - *setup_code_climate
+    - *upload_code_climate
+
+  test-integration:
+    <<: *prelude
+    steps:
+    - checkout
+    - *restore_venv
+    - run:
+        command: |
+          poetry run make test-integration
+
+  publish:
+    <<: *prelude
+    steps:
+      - checkout
+      - run:
+          name: Build and publish
+          command: |
+            make release

@@ -1,0 +1,56 @@
+default_language_version:
+    python: python3.9
+
+repos:
+
+-   repo: local
+    hooks:
+    -   id: validate_circle_ci
+        name: Validate Circle CI config
+        entry: bash -c ". validate_circle_ci.sh"
+        language: system
+
+-   repo: https://github.com/asottile/reorder_python_imports
+    rev: v2.6.0
+    hooks:
+    -   id: reorder-python-imports
+
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.0.1
+    hooks:
+    -   id: end-of-file-fixer
+    -   id: check-yaml
+    -   id: check-json
+    -   id: debug-statements
+
+-   repo: local
+    hooks:
+    -   id: format
+        name: format files with black and isort
+        entry: make format
+        language: system
+        types: [python]
+
+-   repo: local
+    hooks:
+    -   id: flake8
+        name: lint files
+        entry: make lint
+        language: system
+        types: [python]
+
+-   repo: local
+    hooks:
+    -   id: mypy
+        name: typecheck files
+        entry: make typecheck
+        language: system
+        types: [python]
+
+-   repo: local
+    hooks:
+    -  id: unittests
+       name: unittests
+       entry: make test-unit
+       language: system
+       types: [python]

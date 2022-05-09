@@ -1,3 +1,6 @@
+from github_proxy.cache import CacheBackend
+from github_proxy.cache import CacheBackendConfig
+from github_proxy.config import Config
 from github_proxy.github_tokens import GitHubAppConfig
 from github_proxy.github_tokens import GitHubTokenConfig
 from github_proxy.proxy import Proxy
@@ -16,6 +19,9 @@ __all__ = [
     "get_ratelimit_remaining",
     "get_ratelimit_reset",
     "is_rate_limited",
+    "Config",
+    "CacheBackend",
+    "CacheBackendConfig",
 ]
 
 try:
