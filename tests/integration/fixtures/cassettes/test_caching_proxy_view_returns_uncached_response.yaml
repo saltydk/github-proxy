@@ -1,0 +1,134 @@
+interactions:
+- request:
+    body: '{}'
+    headers:
+      Accept:
+      - application/vnd.github.machine-man-preview+json
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '2'
+      Content-Type:
+      - application/json
+      User-Agent:
+      - PyGithub/Python
+      authorization:
+      - token REDACTED
+    method: POST
+    uri: https://api.github.com/app/installations/23919646/access_tokens
+  response:
+    body:
+      string: '{"token": "REDACTED", "expires_at": "2022-03-29T22:12:28Z", "permissions":
+        {"actions": "read", "checks": "write", "contents": "write", "issues": "write",
+        "metadata": "read", "pull_requests": "write", "statuses": "write", "workflows":
+        "write"}, "repository_selection": "selected"}'
+    headers:
+      Access-Control-Allow-Origin:
+      - '*'
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes,
+        X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO,
+        X-GitHub-Request-Id, Deprecation, Sunset
+      Cache-Control:
+      - public, max-age=60, s-maxage=60
+      Content-Length:
+      - '289'
+      Content-Security-Policy:
+      - default-src 'none'
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Tue, 29 Mar 2022 21:12:29 GMT
+      ETag:
+      - '"9299f952f747d41475d1cb1566aeeb25a8dbcda8056cdc396ea87dfefc81692a"'
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Server:
+      - GitHub.com
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      Vary:
+      - Accept
+      - Accept-Encoding, Accept, X-Requested-With
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - deny
+      X-GitHub-Media-Type:
+      - github.v3; param=machine-man-preview; format=json
+      X-GitHub-Request-Id:
+      - D8E7:0BAC:1FEFED5:20F244E:6243763C
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 201
+      message: Created
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - werkzeug/2.0.3
+      authorization:
+      - token REDACTED
+    method: GET
+    uri: https://api.github.com/zen
+  response:
+    body:
+      string: Non-blocking is better than blocking.
+    headers:
+      Access-Control-Allow-Origin:
+      - '*'
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes,
+        X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO,
+        X-GitHub-Request-Id, Deprecation, Sunset
+      Content-Security-Policy:
+      - default-src 'none'
+      Content-Type:
+      - text/plain;charset=utf-8
+      Date:
+      - Tue, 29 Mar 2022 21:12:29 GMT
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Server:
+      - GitHub.com
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding, Accept, X-Requested-With
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - deny
+      X-GitHub-Request-Id:
+      - 5EC4:CC0B:92E92D9:95858DF:6243763D
+      X-RateLimit-Limit:
+      - '15000'
+      X-RateLimit-Remaining:
+      - '14985'
+      X-RateLimit-Reset:
+      - '1648591582'
+      X-RateLimit-Resource:
+      - core
+      X-RateLimit-Used:
+      - '15'
+      X-XSS-Protection:
+      - '0'
+      content-length:
+      - '37'
+    status:
+      code: 200
+      message: OK
+version: 1
