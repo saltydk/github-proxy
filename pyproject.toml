@@ -33,7 +33,7 @@ cachetools = "^5.0.0"
 cryptography = "^37.0.2"
 Jinja2 = "^3.1.2"
 
-redis = { version = ">=3.5.3<5.0.0", optional = true }
+redis = { version = "^3.5.3", optional = true }
 flask = { version = "^2.0.3", optional = true }
 Flask-HTTPAuth = { version = "^4.5.0", optional = true }
 
@@ -48,7 +48,7 @@ flake8 = "^4.0.1"
 isort = "^5.10.1"
 types-requests = "^2.27.11"
 types-cachetools = "^4.2.9"
-types-redis = ">=3.5.3<5.0.0"
+types-redis = "^3.5.3"
 pre-commit = "^2.17.0"
 pytest = "^7.0.1"
 pytest-cov = "^3.0.0"
